@@ -1,8 +1,8 @@
-function inputnumbers() 
-  return function()  
-    return io.read("*number")
-  end
-end
+local file = io.open(arg[1], "r");
+local arr = {}
+for line in file:lines() do
+   table.insert (arr, tonumber(line));
+ end
 
 function buildInc()
   local last
@@ -22,7 +22,7 @@ local last;
 local isInc = buildInc()
 local sumInc = 0
 
-for n in inputnumbers() do
+for _,n in ipairs(arr) do
   --  io.write(n," ", isInc(n) or "+" and "!+","\n")
   sumInc = sumInc + isInc(n)
 end

@@ -1,12 +1,8 @@
-function inputnumbers() 
-  local i = 0
-  return function()  
-    i = i + 1
-    local num =  io.read("*number")
-    return  num and i, num 
-  end
+local file = io.open(arg[1], "r");
+local arr = {}
+for line in file:lines() do
+   table.insert (arr, tonumber(line));
 end
-
 
 Buffer = {bufferPos = 0}
 
@@ -22,7 +18,7 @@ end
 local sumInc = 0
 
 
-for i,n in inputnumbers() do
+for i,n in ipairs(arr) do
 
   if i > 3 then
     --io.write("\n",n)
