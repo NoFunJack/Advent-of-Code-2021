@@ -89,14 +89,14 @@ local numIdx = 0
 function drawNumber() 
   numIdx = numIdx+1
   local num = calls[numIdx]
-  print("**draw number: "..num.."**")
+--  print("**draw number: "..num.."**")
   markNumber(num)
 end
 
-printBoards()
+--printBoards()
 repeat  
   drawNumber()
-  printBoards()
+--  printBoards()
   winner = findWinner()
 until(winner)
 

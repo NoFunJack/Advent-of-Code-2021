@@ -74,7 +74,6 @@ function findLastWinner()
   local foundWinner = false
   for i,b in ipairs(boards) do
     if not isWinner(b) then
-      print("not winner "..i)
       lastLostIdx = i
       return nil
     end
@@ -102,14 +101,14 @@ local numIdx = 0
 function drawNumber() 
   numIdx = numIdx+1
   local num = calls[numIdx]
-  print("**draw number: "..num.."**")
+  --print("**draw number: "..num.."**")
   markNumber(num)
 end
 
-printBoards()
+--printBoards()
 repeat  
   drawNumber()
-  printBoards()
+  --printBoards()
   lastLost = findLastWinner()
 until(lastLost)
 
