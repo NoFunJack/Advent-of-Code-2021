@@ -20,26 +20,21 @@ for line in assert(io.open(arg[1], "r")):lines() do
   readLine(line)
 end
 
-gamma = ""
-beta = ""
-for i in ipairs(mostCommonBits) do
-  if determ(mostCommonBits[i]) then
-   gamma = gamma..1
-   beta = beta..0
+gamma = 0
+beta = 0
+mask = 1
+
+-- reverse becase i = 1 is the most valuable bit
+for i = #mostCommonBits,1,-1 do
+ if determ(mostCommonBits[i]) then
+   gamma = gamma | mask
  else
-   gamma = gamma..0
-   beta = beta..1
+   beta = beta | mask
  end
+ mask = mask << 1
 end
+
 print("gamma: "..gamma)
-gamma = tonumber(gamma,2)
-print("dez: "..gamma)
 print("beta: "..beta)
-beta = tonumber(beta,2)
-print("dez: "..beta)
 
 print("solution: "..gamma*beta)
-
-
-
-

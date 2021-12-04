@@ -1,7 +1,7 @@
 rawData = {}
 row_len = 0
 for line in assert(io.open(arg[1], "r")):lines() do
-  table.insert(rawData,line)
+  table.insert(rawData,tonumber(line,2))
   row_len = #line
 end
 
@@ -9,35 +9,34 @@ print("total data: "..#rawData)
 
 function reduce(arr,det) 
   local filter = {}
-  local row = 1
-  local removed = 0
+  local numRemoved = 0
 
-  while row <= row_len do
-    local common = mostCommon(row,filter,removed)
-    print("C: "..common)
-    for i=1,#rawData do
-      if (not filter[i]) and det(rawData[i]:sub(row,row), common) then
+  for row= 1,row_len do
+    local common = mostCommon(row,filter,numRemoved)
+    for i,line in filterIter(filter) do
+      if (not filter[i]) and det(bitOnPos(line,row), common) then
          filter[i] = true
-         removed = removed + 1
-         if removed >= #rawData-1 then return firstNotRemoved(filter) end
+         numRemoved = numRemoved + 1
+         if numRemoved >= #rawData-1 then return firstNotRemoved(filter) end
       end
     end 
-    row = row + 1
-    print("---"..row)
   end
 
-  return firstNotRemoved(filter)
+  error("list could not be reduced to one")
 end
 
 function mostCommon(idx,filter,numRemoved) 
   local ones = 0
   for i,line in filterIter(filter) do
-    print(i..": "..line)
-    ones = ones + line:sub(idx,idx)
+    -- print(i..": "..string.format("%x",line))
+    ones = ones + bitOnPos(line,idx) 
   end
-  print("ones"..ones)
-  print("#f: "..numRemoved)
-  return (ones >= (#rawData-numRemoved)/2) and "1" or "0"
+  return (ones >= (#rawData-numRemoved)/2) and 1 or 0
+end
+
+function bitOnPos(line,pos)
+   local mask = 1 << row_len >> pos
+   return ((line & mask) ~= 0 and 1 or 0)
 end
 
 function firstNotRemoved(filter) 
@@ -54,17 +53,12 @@ function filterIter(filter)
     repeat raw_i = raw_i+1 until filter[raw_i] == nil 
     return rawData[raw_i] and raw_i, rawData[raw_i]
   end
-
 end
 
-local oxy = reduce(rawData,function(c,common) return c ~= common end )
+local oxy = reduce(rawData,function(bit,common) return bit ~= common end )
 print("oxy: "..oxy)
-oxy = tonumber(oxy,2)
-print("dez: "..oxy)
 
-local scrub = reduce(rawData,function(c,common) return c == common end )
+local scrub = reduce(rawData,function(bit,common) return bit == common end )
 print("scrub: "..scrub)
-scrub = tonumber(scrub,2)
-print("scrub"..scrub)
 
 print("soluton: "..(oxy*scrub))
