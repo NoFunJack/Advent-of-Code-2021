@@ -63,7 +63,7 @@ function isWinner(b)
     local sumH = 0
     local sumV = 0
     for i=0,4 do
-      sumH = sumH + b[r+i]
+      sumH = sumH + b[(r-1)+(i+1)]
       sumV = sumV + b[r+i*5]
     end
     if sumH == -5 or sumV == -5 then return b end
