@@ -1,23 +1,17 @@
-Map = {}
-h = 0
-w = 0
+local Map = {}
+local h = 0
+local w = 0
 
 function addLine(line)
 
   local _,_,x1,y1,x2,y2 = line:find("(%d+),(%d+)%D+(%d+),(%d+)")
-  x1 = tonumber(x1)
-  x2 = tonumber(x2)
-  y1 = tonumber(y1)
-  y2 = tonumber(y2)
+  x1 = tonumber(x1,10)
+  x2 = tonumber(x2,10)
+  y1 = tonumber(y1,10)
+  y2 = tonumber(y2,10)
 
   w = math.max(w,x1,x2)
   h = math.max(h,y1,y2)
-
-  -- points
-  if x1==x2 and y1==y2 then
-    addPoint(x1,y1)
-    return
-  end
 
   -- horizontal
   if x1==x2 then 
@@ -91,10 +85,12 @@ end
 
 function Map:countDanger(dval)
   local c = 0
-  for y = 0,h do
-    for x = 0, w do
-      if self[x] and self[x][y] then
-        if self[x][y] >= dval then c = c+1 end
+  for x = 0, w do
+    if self[x] then
+      for y = 0,h do
+        if self[x][y] then
+          if self[x][y] >= dval then c = c+1 end
+        end
       end
     end
   end
@@ -107,5 +103,4 @@ end
 
 --Map:print()
 
-print("h: "..h.." w: "..w)
 print("Solution: "..Map:countDanger(2))
