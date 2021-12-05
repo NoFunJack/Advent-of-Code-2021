@@ -93,7 +93,6 @@ function Map:countDanger(dval)
   local c = 0
   for y = 0,h do
     for x = 0, w do
-      points = points+1
       if self[x] and self[x][y] then
         if self[x][y] >= dval then c = c+1 end
       end
