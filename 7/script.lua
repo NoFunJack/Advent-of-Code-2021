@@ -4,23 +4,15 @@ do
   local f = io.open(arg[1],"rb"):read("*all")
   for word in string.gmatch(f, '([^,]+)') do
     local c = tonumber(word,10)
-    table.insert(crap,c)
+    crap[c] = crap[c] and crap[c] + 1 or 1
     maxPos = math.max(maxPos,c)
   end
 end
 
-function gaus(n) 
-  return (n*n+n)//2
-end
-
-assert(gaus(0)==0)
-assert(gaus(1)==1)
-assert(gaus(3)==6)
-
 function calcCost(hole,arr,costf)
   local sum = 0
-  for _,c in ipairs(arr) do
-   sum = sum + costf(math.abs(c-hole))
+  for p,c in pairs(arr) do
+   sum = sum + (c*costf(math.abs(p-hole)))
   end
   return sum
 end
