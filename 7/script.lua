@@ -17,7 +17,7 @@ function calcCost(hole,arr,costf)
   return sum
 end
 
-minCost = math.maxinteger
+
 
 if arg[2] == "part1" then
   crapFuelFunct = function(n) return n end
@@ -25,10 +25,28 @@ else
   crapFuelFunct = function(n) return (n*n+n)//2 end
 end
 
-for pos = 0,maxPos do
-  local cost = calcCost(pos,crap, crapFuelFunct)
-  minCost = math.min(cost,minCost)
+function calcCrapPos(pos)
+   return {pos=pos,val=calcCost(pos,crap,crapFuelFunct)}
 end
 
-print("Solution: "..minCost)
+function step(stepSize,prev)
+  if stepSize == 0 then return prev end
+
+  local l = calcCrapPos(prev.pos-stepSize)
+  local u = calcCrapPos(prev.pos+stepSize)
+
+  stepSize = stepSize//2
+  if l.val < prev.val then
+    return step(stepSize,l)
+  elseif u.val < prev.val then
+    return step(stepSize,u)
+  else
+    return step(stepSize,prev)
+  end
+ 
+end
+
+local middle = maxPos//2
+local init = calcCrapPos(middle)
+print("Solution: "..step(middle//2,init).val)
 
