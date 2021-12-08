@@ -43,7 +43,7 @@ function Display:phase()
   for _,code in ipairs(self.input) do
     local num = getNumForLength(#code)
     if num ~= nil then
-      print("code",num,code)
+      --print("code",num,code)
       self.codes[num] = code
     elseif #code == 5 then table.insert(fiver,code) 
     elseif #code == 6 then table.insert(sixer,code) 
@@ -61,7 +61,7 @@ function Display:phase()
       self.codes[6] = six
       self.seg.c = c
       self.seg.f = strset.inter(self.codes[1],c)
-      print("code",6,six)
+      --print("code",6,six)
       break
     end
   end
@@ -73,10 +73,10 @@ function Display:phase()
         local diff = strset.minus(self.codes[4],six)
         if #diff == 0 then
           self.codes[9] = six
-          print("code",9,six)
+          --print("code",9,six)
         else
           self.codes[0] = six
-          print("code",0,six)
+          --print("code",0,six)
           self.seg.d=diff
         end
     end
@@ -87,7 +87,7 @@ function Display:phase()
   for _,five in ipairs(fiver) do
     if not five:match(self.seg.c) then
       self.codes[5]=five
-      print("code",5,five)
+      --print("code",5,five)
       break
     end
   end
@@ -98,10 +98,10 @@ function Display:phase()
       local inter = strset.minus(self.codes[1],five)
       if #inter == 0 then
         self.codes[3]=five
-        print("code",3,five)
+        --print("code",3,five)
       elseif #inter == 1 then 
         self.codes[2]=five
-        print("code",2,five)
+        --print("code",2,five)
       end
     end
   end
@@ -146,7 +146,7 @@ end
 --read data
 sum = 0
 for line in assert(io.open(arg[1], "r")):lines() do
-  print(line)
+  --print(line)
   Display:new(line) 
   Display:phase()
   sum = sum + Display:getValue()

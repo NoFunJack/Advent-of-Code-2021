@@ -1,10 +1,5 @@
-function addLine(line)
-  print(line)
-end
-
 function countUniques(line)
   local count = 0
-  print(line)
   -- 1
   count = count + findNLetterInputs(line,2)
   -- 4
@@ -26,7 +21,7 @@ function findNLetterInputs(line,n)
 end
 
 function countMatches(line,matchstr) 
-  print("countinput:"..line)
+  --print("countinput:"..line)
 end
 
 --read data
