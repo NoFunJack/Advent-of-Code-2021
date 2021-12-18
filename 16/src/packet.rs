@@ -50,7 +50,7 @@ mod test {
 
         let val = match p.content {
             PacketContent::LiteralValue(x) => x,
-            _ => unreachable!(),
+            _ => panic!("Version 6 should be LiteralValue"),
         };
 
         assert_eq!(val, 2021);
