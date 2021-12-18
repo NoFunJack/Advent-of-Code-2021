@@ -11,15 +11,16 @@ end
 
 function dij(x,y)
   data[x][y].d = 0
-  visitNext(x,y,0,0)
+  visited = {}
+  visitNext(x,y,0)
 end
 
-function visitNext(x,y,t,d)
-  visit(x,y+1,t,d)
-  visit(x+1,y,t,d)
+function visitNext(x,y,d,visited)
+  visit(x,y+1,d,visited)
+  visit(x+1,y,d)
 end
 
-function visit(x,y,t,dist)
+function visit(x,y,dist)
   local n = data[x] and data[x][y] or nil
   if not n then 
     tx = (x-1)//xMax
@@ -29,6 +30,7 @@ function visit(x,y,t,dist)
     yorg = orgIdx(y,yMax)
     nextV = data[xorg][yorg].v+tx+ty
     if nextV > 9 then nextV = nextV - 9 end
+    assert(nextV < 10)
     data[x] = data[x] or {}
     data[x][y] = {v=nextV,d=math.maxinteger}
     n = data[x][y]
@@ -38,7 +40,7 @@ function visit(x,y,t,dist)
 
   if tohere < n.d then 
     n.d = tohere
-    visitNext(x,y,t,tohere)
+    visitNext(x,y,tohere)
   end
 
 end
