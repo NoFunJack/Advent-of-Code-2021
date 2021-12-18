@@ -1,6 +1,6 @@
 pub struct BitsStream {
     raw: String,
-    char_iter: usize,
+    pub char_iter: usize,
 }
 
 impl BitsStream {
@@ -22,6 +22,7 @@ impl BitsStream {
     pub fn get_bin_slice(&mut self, n: usize) -> String {
         let re = &self.raw[self.char_iter..(self.char_iter + n)];
         self.char_iter += n;
+        println!("return slice {}", re);
         re.to_string()
     }
 

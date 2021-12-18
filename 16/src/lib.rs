@@ -1,2 +1,2 @@
-mod bitsreader;
-mod packet;
+pub mod bitsreader;
+pub mod packet;
