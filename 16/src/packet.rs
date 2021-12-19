@@ -17,7 +17,7 @@ impl Packet {
             version: v,
             content: match bits.next_n_as_number(3) {
                 4 => PacketContent::lit_val(bits),
-                _ => PacketContent::operator(bits),
+                x => PacketContent::operator(bits, x),
             },
         };
 
@@ -31,19 +31,64 @@ impl Packet {
 
     pub fn get_version_sum(&self) -> usize {
         let mut sum = self.version;
-        if let PacketContent::Operator(subs) = &self.content {
+        if let PacketContent::Operator(_, subs) = &self.content {
             for s in subs {
                 sum += s.get_version_sum();
             }
         }
         sum
     }
+
+    pub fn eval(&self) -> usize {
+        match &self.content {
+            PacketContent::LiteralValue(x) => *x,
+            PacketContent::Operator(OperatorType::Sum, v) => v.iter().map(|p| p.eval()).sum(),
+            PacketContent::Operator(OperatorType::Product, v) => {
+                v.iter().map(|p| p.eval()).product()
+            }
+            PacketContent::Operator(OperatorType::Minimum, v) => {
+                v.iter().map(|p| p.eval()).min().unwrap()
+            }
+            PacketContent::Operator(OperatorType::Maximum, v) => {
+                v.iter().map(|p| p.eval()).max().unwrap()
+            }
+            PacketContent::Operator(OperatorType::LessThan, v) => {
+                match v.get(0).unwrap().eval() < v.get(1).unwrap().eval() {
+                    true => 1,
+                    false => 0,
+                }
+            }
+            PacketContent::Operator(OperatorType::GreaterThan, v) => {
+                match v.get(0).unwrap().eval() > v.get(1).unwrap().eval() {
+                    true => 1,
+                    false => 0,
+                }
+            }
+            PacketContent::Operator(OperatorType::EqualTo, v) => {
+                match v.get(0).unwrap().eval() == v.get(1).unwrap().eval() {
+                    true => 1,
+                    false => 0,
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
 enum PacketContent {
     LiteralValue(usize),
-    Operator(Vec<Packet>),
+    Operator(OperatorType, Vec<Packet>),
+}
+
+#[derive(Debug)]
+enum OperatorType {
+    Sum,
+    Product,
+    Minimum,
+    Maximum,
+    GreaterThan,
+    LessThan,
+    EqualTo,
 }
 
 impl PacketContent {
@@ -59,7 +104,7 @@ impl PacketContent {
         Self::LiteralValue(usize::from_str_radix(&all, 2).unwrap())
     }
 
-    fn operator(bits: &mut BitsStream) -> PacketContent {
+    fn operator(bits: &mut BitsStream, type_id: usize) -> PacketContent {
         // does the length even matter?
         let mut length_id = match bits.next_n_as_number(1) {
             0 => Some(LengthType::BitLength(bits.next_n_as_number(15))),
@@ -73,7 +118,18 @@ impl PacketContent {
             subpackets.push(Packet::new(bits, &mut length_id));
         }
 
-        Self::Operator(subpackets)
+        let op_type = match type_id {
+            0 => OperatorType::Sum,
+            1 => OperatorType::Product,
+            2 => OperatorType::Minimum,
+            3 => OperatorType::Maximum,
+            5 => OperatorType::GreaterThan,
+            6 => OperatorType::LessThan,
+            7 => OperatorType::EqualTo,
+            _ => panic!(),
+        };
+
+        Self::Operator(op_type, subpackets)
     }
 }
 
@@ -131,7 +187,7 @@ mod test {
         assert_eq!(p.version, 1);
 
         let val = match p.content {
-            PacketContent::Operator(x) => x,
+            PacketContent::Operator(_, x) => x,
             _ => panic!("Packet not id 4 should be Operator"),
         };
 
@@ -156,7 +212,7 @@ mod test {
         assert_eq!(p.version, 7);
 
         let val = match p.content {
-            PacketContent::Operator(x) => x,
+            PacketContent::Operator(_, x) => x,
             _ => panic!("Packet not id 4 should be Operator"),
         };
 
@@ -174,5 +230,49 @@ mod test {
             PacketContent::LiteralValue(3)
         ));
         assert!(matches!(subs.next(), None));
+    }
+
+    #[test]
+    fn eval_sum() {
+        assert_eq!(eval("C200B40A82"), 3);
+    }
+
+    #[test]
+    fn eval_prod() {
+        assert_eq!(eval("04005AC33890"), 54);
+    }
+
+    #[test]
+    fn eval_min() {
+        assert_eq!(eval("880086C3E88112"), 7);
+    }
+
+    #[test]
+    fn eval_max() {
+        assert_eq!(eval("CE00C43D881120"), 9);
+    }
+
+    #[test]
+    fn eval_less_than() {
+        assert_eq!(eval("D8005AC2A8F0"), 1);
+    }
+
+    #[test]
+    fn eval_greater_than() {
+        assert_eq!(eval("F600BC2D8F"), 0);
+    }
+
+    #[test]
+    fn eval_equal() {
+        assert_eq!(eval("9C005AC2F8F0"), 0);
+    }
+
+    #[test]
+    fn eval_mixed() {
+        assert_eq!(eval("9C0141080250320F1802104A08"), 1);
+    }
+
+    fn eval(input: &str) -> usize {
+        Packet::new(&mut BitsStream::new(input.to_string()), &mut None).eval()
     }
 }
