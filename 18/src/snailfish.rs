@@ -1,12 +1,12 @@
-use std::str::Chars;
+use std::{fmt::Debug, str::Chars, usize};
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq)]
 pub struct Number {
     left: Box<Content>,
     right: Box<Content>,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq)]
 pub enum Content {
     Pair(Number),
     Value(isize),
@@ -21,6 +21,46 @@ impl Number {
         Number {
             left: Box::new(left),
             right: Box::new(right),
+        }
+    }
+
+    fn explode_deep_numbers(&mut self) {
+        let nested_counter = 1;
+        if let Content::Pair(p) = &mut *self.left {
+            find_to_explode(p, nested_counter + 1);
+        }
+
+        fn find_to_explode(num: &mut Number, depth: usize) {
+            if let Content::Pair(p) = &mut *num.left {
+                if depth == 3 {
+                    match &mut *num.right {
+                        Content::Value(x) => match &*p.right {
+                            Content::Value(v) => num.right = Box::new(Content::Value(*x + v)),
+                            Content::Pair(p) => panic!(),
+                        },
+                        Content::Pair(p) => {
+                            panic!("exploding pair not next to regular value: {:?}", p)
+                        }
+                    }
+                }
+
+                find_to_explode(p, depth + 1);
+            }
+        }
+    }
+}
+
+impl Debug for Number {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Number: [{:?},{:?}]", &self.left, &self.right)
+    }
+}
+
+impl Debug for Content {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Pair(p) => write!(f, "[{:?},{:?}]", p.left, p.right),
+            Self::Value(v) => write!(f, "{}", v),
         }
     }
 }
@@ -99,6 +139,15 @@ mod test {
             }
             _ => panic!("left is not a pair"),
         }
+    }
+
+    #[test]
+    fn explode_depp_nested() {
+        let mut n = phaseStr("[[[[[9,8],1],2],3],4]");
+        let expected_after = phaseStr("[[[[0,9],2],3],4]");
+        n.explode_deep_numbers();
+
+        assert_eq!(n, expected_after);
     }
 
     fn phaseStr(s: &str) -> Number {

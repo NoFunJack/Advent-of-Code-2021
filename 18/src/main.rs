@@ -12,5 +12,5 @@ fn main() {
 
     let n = Number::phase(contents);
 
-    println!("{:?}", n);
+    println!("{:#?}", n);
 }
