@@ -24,29 +24,77 @@ impl Number {
         }
     }
 
-    fn explode_deep_numbers(&mut self) {
-        let nested_counter = 1;
-        if let Content::Pair(p) = &mut *self.left {
-            find_to_explode(p, nested_counter + 1);
-        }
+    fn get_values(&self) -> (isize, isize) {
+        let l = match *self.left {
+            Content::Pair(..) => panic!(),
+            Content::Value(v) => v,
+        };
+        let r = match *self.right {
+            Content::Pair(..) => panic!(),
+            Content::Value(v) => v,
+        };
 
-        fn find_to_explode(num: &mut Number, depth: usize) {
-            if let Content::Pair(p) = &mut *num.left {
-                if depth == 3 {
-                    match &mut *num.right {
-                        Content::Value(x) => match &*p.right {
-                            Content::Value(v) => num.right = Box::new(Content::Value(*x + v)),
-                            Content::Pair(p) => panic!(),
-                        },
-                        Content::Pair(p) => {
-                            panic!("exploding pair not next to regular value: {:?}", p)
-                        }
+        (l, r)
+    }
+
+    fn explode_deep_numbers(&mut self) {
+        self.explode_int(0);
+    }
+
+    fn explode_int(&mut self, depth: usize) -> (Option<isize>, Option<isize>) {
+        let mut re = (None, None);
+
+        println!("Debug d:{} num:{:?}", depth, self);
+
+        if depth == 3 {
+            println!("exp num: {:?}", self);
+            if let Content::Pair(p) = &*self.left {
+                let (l, r) = p.get_values();
+                re = (Some(l), None);
+                match &*self.right {
+                    Content::Pair(np) => panic!("exploding left has pair right {:?}", np),
+                    Content::Value(v) => {
+                        self.right = Box::new(Content::Value(v + r));
+                        self.left = Box::new(Content::Value(0));
                     }
                 }
+            }
+            if let Content::Pair(p) = &*self.right {
+                let (l, r) = p.get_values();
+                re = (None, Some(r));
+                match &*self.left {
+                    Content::Pair(np) => panic!("exploding right has pair left {:?}", np),
+                    Content::Value(v) => {
+                        self.left = Box::new(Content::Value(v + l));
+                        self.right = Box::new(Content::Value(0));
+                    }
+                }
+            }
+        } else {
+            if let Content::Pair(p) = &mut *self.left {
+                re = p.explode_int(depth + 1);
+            }
+            if let Content::Pair(p) = &mut *self.right {
+                re = p.explode_int(depth + 1);
+            }
 
-                find_to_explode(p, depth + 1);
+            if let Some(l) = re.0 {
+                if let Content::Value(v) = *self.left {
+                    println!("moved value {} to {}", l, v);
+                    self.left = Box::new(Content::Value(v + l));
+                    re.0 = None;
+                }
+            }
+            if let Some(r) = re.1 {
+                if let Content::Value(v) = *self.right {
+                    println!("moved value {} to {}", r, v);
+                    self.right = Box::new(Content::Value(v + r));
+                    re.1 = None;
+                }
             }
         }
+
+        re
     }
 }
 
@@ -108,14 +156,14 @@ mod test {
 
     #[test]
     fn test_input_simple() {
-        let n = phaseStr("[1,2]");
+        let n = phase_str("[1,2]");
         assert!(matches!(*n.left, Content::Value(1)));
         assert!(matches!(*n.right, Content::Value(2)));
     }
 
     #[test]
     fn test_input_left_nested() {
-        let n = phaseStr("[[1,3],2]");
+        let n = phase_str("[[1,3],2]");
         match *n.left {
             Content::Pair(sub) => {
                 assert!(matches!(*sub.left, Content::Value(1)));
@@ -129,7 +177,7 @@ mod test {
 
     #[test]
     fn test_input_right_nested() {
-        let n = phaseStr("[1,[3,2]]");
+        let n = phase_str("[1,[3,2]]");
 
         assert!(matches!(*n.left, Content::Value(1)));
         match *n.right {
@@ -142,15 +190,41 @@ mod test {
     }
 
     #[test]
-    fn explode_depp_nested() {
-        let mut n = phaseStr("[[[[[9,8],1],2],3],4]");
-        let expected_after = phaseStr("[[[[0,9],2],3],4]");
-        n.explode_deep_numbers();
-
-        assert_eq!(n, expected_after);
+    fn explode_deep_nested_1() {
+        assert_explotion("[[[[[9,8],1],2],3],4]", "[[[[0,9],2],3],4]");
+    }
+    #[test]
+    fn explode_deep_nested_2() {
+        assert_explotion("[7,[6,[5,[4,[3,2]]]]]", "[7,[6,[5,[7,0]]]]");
+    }
+    #[test]
+    fn explode_deep_nested_3() {
+        assert_explotion("[[6,[5,[4,[3,2]]]],1]", "[[6,[5,[7,0]]],3]");
     }
 
-    fn phaseStr(s: &str) -> Number {
+    #[test]
+    fn explode_deep_nested_4() {
+        assert_explotion(
+            "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]",
+            "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]",
+        );
+    }
+    #[test]
+    fn explode_deep_nested_5() {
+        assert_explotion(
+            "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]",
+            "[[3,[2,[8,0]]],[9,[5,[7,0]]]]",
+        );
+    }
+
+    fn assert_explotion(n: &str, expected: &str) {
+        let mut n = phase_str(n);
+        let expected_after = phase_str(expected);
+        n.explode_deep_numbers();
+        assert_eq!(n, expected_after)
+    }
+
+    fn phase_str(s: &str) -> Number {
         let n = Number::phase(s.to_string());
 
         println!("{:#?}", n);
