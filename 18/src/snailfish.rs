@@ -77,6 +77,7 @@ impl Number {
             if let Content::Pair(p) = &mut *self.right {
                 re = p.explode_int(depth + 1);
             }
+            println!("re {:?}", re);
 
             if let Some(l) = re.0 {
                 if let Content::Value(v) = *self.left {

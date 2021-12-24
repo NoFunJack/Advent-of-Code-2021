@@ -1,0 +1,14 @@
+{
+  "name": "trick-shot",
+  "version": "1.0.0",
+  "description": "AoC day 17",
+  "main": "script.js",
+  "scripts": {
+    "test": "node script.js \"target area: x=20..30, y=-10..-5\"",
+    "test2": "node script2.js \"target area: x=20..30, y=-10..-5\"",
+    "real": "node script.js \"target area: x=153..199, y=-114..-75\"",
+    "real2": "node script2.js \"target area: x=153..199, y=-114..-75\""
+  },
+  "author": "",
+  "license": "ISC"
+}
