@@ -44,7 +44,7 @@ describe('operations', function() {
     expect(scanner.rotate(1,0)).to.eql(
       [
         [0,1,0],
-        [-0,-2,0],
+        [0,-2,0],
         [-3,0,0],
         [4,0,0],
         [0,0,5],
@@ -54,7 +54,7 @@ describe('operations', function() {
     expect(scanner.rotate(2,0)).to.eql(
       [
         [0,0,1],
-        [-0,0,-2],
+        [0,0,-2],
         [0,3,0],
         [0,-4,0],
         [-5,0,0],
@@ -64,9 +64,9 @@ describe('operations', function() {
     expect(scanner.rotate(3,0)).to.eql(
       [
         [-1,0,0],
-        [2,-0,0],
+        [2,0,0],
         [0,-3,0],
-        [-0,4,0],
+        [0,4,0],
         [0,0,5],
         [0,0,-6]
       ]);
@@ -76,7 +76,7 @@ describe('operations', function() {
         [0,-1,0],
         [0,2,0],
         [3,0,0],
-        [-4,-0,0],
+        [-4,0,0],
         [0,0,5],
         [0,0,-6]
       ]);
@@ -88,7 +88,7 @@ describe('operations', function() {
         [0,3,0],
         [0,-4,0],
         [5,0,0],
-        [-6,0,-0]
+        [-6,0,0]
       ]);
 
   });

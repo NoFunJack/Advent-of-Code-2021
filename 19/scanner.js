@@ -24,8 +24,8 @@ function rot(v,m,fixed) {
   vis = [0,1,2].filter(x => x !=fixed);
   matrix = rotations_2d[m]
   let re = []
-  re[vis[0]] = matrix[0]*v[vis[0]] +matrix[1]*v[vis[1]]
-  re[vis[1]] = matrix[2]*v[vis[0]] +matrix[3]*v[vis[1]]
+  re[vis[0]] = parseInt(matrix[0]*v[vis[0]] +matrix[1]*v[vis[1]])
+  re[vis[1]] = parseInt(matrix[2]*v[vis[0]] +matrix[3]*v[vis[1]])
   re[fixed] = v[fixed]
   return re;
 }
