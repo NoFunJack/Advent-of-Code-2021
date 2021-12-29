@@ -93,7 +93,56 @@ describe('operations', function() {
 
   });
 
-  it('should rotate 4 positions of own axis');
+  it('should rotate 4 positions of X axis',function() {
+
+    const scanner = new Scanner(`1,0,0
+      -2,0,0
+      0,3,0
+      0,-4,0
+      0,0,5
+      0,0,-6`);
+
+    expect(scanner.rotate(0,0)).to.eql(
+      [
+        [1,0,0],
+        [-2,0,0],
+        [0,3,0],
+        [0,-4,0],
+        [0,0,5],
+        [0,0,-6]
+      ]);
+
+    expect(scanner.rotate(0,1)).to.eql(
+      [
+        [1,0,0],
+        [-2,0,0],
+        [0,0,3],
+        [0,0,-4],
+        [0,-5,0],
+        [0,6,0]
+      ]);
+
+    expect(scanner.rotate(0,2)).to.eql(
+      [
+        [1,0,0],
+        [-2,0,0],
+        [0,-3,0],
+        [0,4,0],
+        [0,0,-5],
+        [0,0,6]
+      ]);
+
+    expect(scanner.rotate(0,3)).to.eql(
+      [
+        [1,0,0],
+        [-2,0,0],
+        [0,0,-3],
+        [0,0,4],
+        [0,5,0],
+        [0,-6,0]
+      ]);
+  });
+
   it('should mix facing-to and rotation');
   it('should maintain original state');
 });

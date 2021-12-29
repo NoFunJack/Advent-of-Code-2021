@@ -5,10 +5,12 @@ function Scanner(lines) {
 
 Scanner.prototype.rotate= function(f,r) {
   return this.beacons
-  .map(b => change_facing(f,b)); 
+  .map(b => change_facing(f,b))
+  .map(b => rotate(f,r,b)); 
 }
 
 function change_facing(f,b){
+  let re = []
   switch (f){
     case 0: return rot(b,0,2);
     case 1: return rot(b,1,2);
@@ -18,6 +20,10 @@ function change_facing(f,b){
     case 5: return rot(b,3,1);
     default: throw new Error("unknown facing: "+f)
   }
+}
+
+function rotate(f,r,b) {
+  return rot(b,r,f%3);
 }
 
 function rot(v,m,fixed) {
