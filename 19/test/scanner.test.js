@@ -6,7 +6,7 @@ describe('reader', function() {
   it('should read one beacon',function() {
     const input = `1,1,1`;
 
-    var scanner = new Scanner(input);
+    let scanner = new Scanner(input);
     expect(scanner.beacons).to.have.length(1)
     expect(scanner.beacons).to.eql([[1,1,1]])
   });
@@ -15,7 +15,7 @@ describe('reader', function() {
     const input = `1,1,1
     1,-2,-2`;
 
-    var scanner = new Scanner(input);
+    let scanner = new Scanner(input);
     expect(scanner.beacons).to.have.length(2)
     expect(scanner.beacons).to.eql([[1,1,1],[1,-2,-2]])
   });
@@ -143,6 +143,9 @@ describe('operations', function() {
       ]);
   });
 
-  it('should mix facing-to and rotation');
-  it('should maintain original state');
+  it('should transpose scanner', function() {
+    let scanner = new Scanner("0,0,0");
+    scanner.transpose([1,3,-5]);
+    expect(scanner.beacons).to.eql([[1,3,-5]])
+  });
 });

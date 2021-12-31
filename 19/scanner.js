@@ -9,6 +9,11 @@ Scanner.prototype.rotate= function(f,r) {
   .map(b => rotate(f,r,b)); 
 }
 
+Scanner.prototype.transpose = function(x) {
+  this.beacons = this.beacons.map(function (t, idx) {
+  return [t[0]+x[0],t[1]+x[1],t[2]+x[2]];
+});}
+
 function change_facing(f,b){
   let re = []
   switch (f){
