@@ -39,6 +39,43 @@ describe('cloud', function() {
         [0,-3,10],
       ]);
   });
-  it('match using rotation');
+  it('match using rotation',function() {
+    let s0 = new Scanner(`1,0,0
+    2,0,0
+    3,0,0`);
+    let cloud = new Cloud(s0,3);
+    
+    expect(cloud.beacons).to.have.lengthOf(3)
+
+    // s0 + (0,3,-5) and one new beacon
+    let s1 = new Scanner(`0,0,5
+    0,-1,0
+    0,-2,0
+    0,-3,0`);
+
+    expect(cloud.try_add(s1)).to.be.true
+    expect(cloud.beacons).to.eql(
+      [
+        [1,0,0],
+        [2,0,0],
+        [3,0,0],
+        [0,0,5],
+      ]);
+  });
+  it('report not maching',function(){
+    let s0 = new Scanner(`1,0,0
+    2,0,0
+    3,0,0`);
+    let cloud = new Cloud(s0,3);
+    
+    expect(cloud.beacons).to.have.lengthOf(3)
+
+    // s0 + (0,3,-5) and one new beacon
+    let s1 = new Scanner(`0,0,5
+    0,-2,0
+    0,-3,0`);
+
+    expect(cloud.try_add(s1)).to.be.false
+  });
 
 });

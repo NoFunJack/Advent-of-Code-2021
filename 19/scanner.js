@@ -10,7 +10,11 @@ Scanner.prototype.rotate= function(f,r) {
 }
 
 Scanner.prototype.transpose = function(x) {
-  this.beacons = this.beacons.map(function (t, idx) {
+  return Scanner.transposeList(this.beacons,x);
+}
+
+Scanner.transposeList = function(list,x) {
+  return  list.map(function (t, idx) {
   return [t[0]+x[0],t[1]+x[1],t[2]+x[2]];
 });}
 

@@ -145,7 +145,6 @@ describe('operations', function() {
 
   it('should transpose scanner', function() {
     let scanner = new Scanner("0,0,0");
-    scanner.transpose([1,3,-5]);
-    expect(scanner.beacons).to.eql([[1,3,-5]])
+    expect(scanner.transpose([1,3,-5])).to.eql([[1,3,-5]])
   });
 });
