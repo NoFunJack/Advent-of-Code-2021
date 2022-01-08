@@ -11,6 +11,7 @@ impl Cloud {
         Cloud {
             beacons: scanner.beacons,
             req_number: 12,
+            scanner_pos: Vec<(i32,i32,i32)>,
         }
     }
     pub fn new_var_match(scanner: Scanner, req_number: usize) -> Cloud {
