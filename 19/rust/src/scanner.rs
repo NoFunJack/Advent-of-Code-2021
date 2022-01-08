@@ -1,44 +1,50 @@
-use std::cmp::max;
-use std::cmp::min;
-
 #[derive(Debug)]
 pub struct Scanner {
     pub beacons: Vec<Beacon>,
-    min: (i32, i32, i32),
-    max: (i32, i32, i32),
 }
 
 impl Scanner {
-    pub fn new(beacons: Vec<Beacon>) -> Self {
-        let min = beacons.iter().fold((0, 0, 0), |a, b| {
-            (min(a.0, b.0), min(a.1, b.1), min(a.2, b.2))
-        });
-        let max = beacons.iter().fold((0, 0, 0), |a, b| {
-            (max(a.0, b.0), max(a.1, b.1), max(a.2, b.2))
-        });
-        Self { beacons, min, max }
+    pub fn new(mut beacons: Vec<Beacon>) -> Self {
+        let list_clone = beacons.clone();
+        beacons.iter_mut().for_each(|b| b.set_dists(&list_clone));
+
+        Self { beacons }
     }
 
     pub fn rotate(&self, f: u8, r: u8) -> Vec<Beacon> {
         self.beacons.iter().map(|b| b.rotate(f, r)).collect()
     }
-
-    pub fn is_in_range(&self, b: Beacon) -> bool {
-        self.min.0 <= b.0
-            && self.min.1 <= b.1
-            && self.min.2 <= b.2
-            && self.max.0 >= b.0
-            && self.max.1 >= b.1
-            && self.max.2 >= b.2
-    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Beacon(pub i32, pub i32, pub i32);
+pub struct Beacon {
+    pub pos: (i32, i32, i32),
+    dists: Option<Vec<i32>>,
+}
 
 impl Beacon {
+    pub fn new(x: i32, y: i32, z: i32) -> Self {
+        Self {
+            pos: (x, y, z),
+            dists: None,
+        }
+    }
+
+    pub fn could_be_same(&self, other: &Beacon) -> bool {
+        if let Some(my_dists) = &self.dists {
+            if let Some(other_dists) = &other.dists {
+                return 10
+                    <= my_dists
+                        .iter()
+                        .filter(|my| other_dists.contains(my))
+                        .count();
+            }
+        }
+        false
+    }
+
     fn rotate(&self, f: u8, r: u8) -> Beacon {
-        let Beacon(x, y, z) = self.clone();
+        let (x, y, z) = self.pos;
         let mut b = match f {
             0 => (x, y, z),
             1 => Beacon::rotate_around_axis((x, y, z), 2, 1),
@@ -50,12 +56,18 @@ impl Beacon {
         };
 
         b = Beacon::rotate_around_axis(b, f % 3, r);
-        Beacon(b.0, b.1, b.2)
+        Beacon {
+            pos: b,
+            dists: self.dists.clone(),
+        }
     }
 
     pub fn shift(&self, v: (i32, i32, i32)) -> Beacon {
-        let Beacon(x, y, z) = self;
-        Beacon(x + v.0, y + v.1, z + v.2)
+        let (x, y, z) = self.pos;
+        Beacon {
+            pos: (x + v.0, y + v.1, z + v.2),
+            dists: self.dists.clone(),
+        }
     }
 
     fn rotate_around_axis(v: (i32, i32, i32), fixed: u8, r: u8) -> (i32, i32, i32) {
@@ -92,6 +104,14 @@ impl Beacon {
             _ => panic!(),
         }
     }
+
+    fn set_dists(&mut self, others: &Vec<Beacon>) {
+        self.dists = Some(others.iter().map(|o| man_dist(o.pos, self.pos)).collect());
+    }
+}
+
+fn man_dist(x: (i32, i32, i32), y: (i32, i32, i32)) -> i32 {
+    (x.0 - y.0).abs() + (x.1 - y.1).abs() + (x.2 - y.2).abs()
 }
 
 #[cfg(test)]
@@ -101,20 +121,20 @@ mod test {
 
     #[test]
     fn orientations() {
-        let b = Beacon(1, 2, 3);
+        let b = Beacon::new(1, 2, 3);
 
         // change faceing
-        assert_eq!(b.rotate(0, 0), Beacon(1, 2, 3));
-        assert_eq!(b.rotate(1, 0), Beacon(-2, 1, 3));
-        assert_eq!(b.rotate(2, 0), Beacon(-3, 2, 1));
-        assert_eq!(b.rotate(3, 0), Beacon(-1, 2, -3));
-        assert_eq!(b.rotate(4, 0), Beacon(2, -1, 3));
-        assert_eq!(b.rotate(5, 0), Beacon(3, 2, -1));
-        assert_eq!(b.rotate(0, 1), Beacon(1, -3, 2));
-        assert_eq!(b.rotate(0, 2), Beacon(1, -2, -3));
-        assert_eq!(b.rotate(0, 3), Beacon(1, 3, -2));
-        assert_eq!(b.rotate(1, 1), Beacon(-3, 1, -2));
-        assert_eq!(b.rotate(1, 2), Beacon(2, 1, -3));
-        assert_eq!(b.rotate(1, 3), Beacon(3, 1, 2));
+        assert_eq!(b.rotate(0, 0), Beacon::new(1, 2, 3));
+        assert_eq!(b.rotate(1, 0), Beacon::new(-2, 1, 3));
+        assert_eq!(b.rotate(2, 0), Beacon::new(-3, 2, 1));
+        assert_eq!(b.rotate(3, 0), Beacon::new(-1, 2, -3));
+        assert_eq!(b.rotate(4, 0), Beacon::new(2, -1, 3));
+        assert_eq!(b.rotate(5, 0), Beacon::new(3, 2, -1));
+        assert_eq!(b.rotate(0, 1), Beacon::new(1, -3, 2));
+        assert_eq!(b.rotate(0, 2), Beacon::new(1, -2, -3));
+        assert_eq!(b.rotate(0, 3), Beacon::new(1, 3, -2));
+        assert_eq!(b.rotate(1, 1), Beacon::new(-3, 1, -2));
+        assert_eq!(b.rotate(1, 2), Beacon::new(2, 1, -3));
+        assert_eq!(b.rotate(1, 3), Beacon::new(3, 1, 2));
     }
 }
