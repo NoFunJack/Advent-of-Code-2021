@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 
 use beacon_scanner::cloud::Cloud;
+use beacon_scanner::scanner::man_dist;
 use beacon_scanner::scanner::Beacon;
 use beacon_scanner::scanner::Scanner;
 
@@ -29,6 +30,18 @@ fn main() {
             None => panic!("{} Scanner left, none fit", scanner.len()),
         }
     }
+
+    let pos_copy = cloud.scanner_pos.clone();
+
+    let max_dist = cloud
+        .scanner_pos
+        .iter()
+        .map(|t| pos_copy.iter().map(|c| man_dist(*t, *c)).max())
+        .max()
+        .flatten()
+        .unwrap();
+
+    println!("max scanner dist: {}", max_dist);
 }
 
 fn load_scanner() -> Vec<Scanner> {

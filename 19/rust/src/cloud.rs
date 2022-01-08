@@ -4,6 +4,7 @@ use crate::scanner::{Beacon, Scanner};
 pub struct Cloud {
     pub beacons: Vec<Beacon>,
     req_number: usize,
+    pub scanner_pos: Vec<(i32, i32, i32)>,
 }
 
 impl Cloud {
@@ -11,13 +12,14 @@ impl Cloud {
         Cloud {
             beacons: scanner.beacons,
             req_number: 12,
-            scanner_pos: Vec<(i32,i32,i32)>,
+            scanner_pos: vec![(0, 0, 0)],
         }
     }
     pub fn new_var_match(scanner: Scanner, req_number: usize) -> Cloud {
         Cloud {
             beacons: scanner.beacons,
             req_number,
+            scanner_pos: Vec::new(),
         }
     }
 
@@ -72,6 +74,7 @@ impl Cloud {
                 .into_iter()
                 .map(|b| b.shift(shift))
                 .for_each(|b| self.beacons.push(b));
+            self.scanner_pos.push(shift);
 
             return Ok(());
         }
