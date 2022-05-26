@@ -2,9 +2,12 @@ fn main() {
     println!("Hello, world!");
 }
 
+const HALLWAY_SIZE: usize = 11;
+const ROOM_POS: [usize; 4] = [2, 4, 6, 8];
+
 #[derive(Debug, Clone)]
 struct Hallway {
-    content: [Option<Pod>; 11],
+    content: [Option<Pod>; HALLWAY_SIZE],
     rooms: [Room; 4],
 }
 
@@ -17,13 +20,51 @@ impl Hallway {
     }
 
     fn move_to_hw(&self) -> Vec<Hallway> {
-        let re = Vec::new();
+        let mut re = Vec::new();
         for (i, _) in self.rooms.iter().enumerate() {
             let mut clone = self.clone();
             if let Some(pod) = clone.rooms[i].get() {
-                // one clone for each reachable space
-                todo!();
+                re.append(&mut move_pod_lr(clone, pod, ROOM_POS[i]));
             }
+        }
+
+        // one clone for each reachable space
+        fn move_pod_lr(hw: Hallway, pod: Pod, starting_pos: usize) -> Vec<Hallway> {
+            let mut in_hw = Vec::new();
+            // try left
+            for i in (0..starting_pos).rev() {
+                if !front_of_door(i) {
+                    match clone_if_free(&hw, pod, i) {
+                        Some(hw_clone) => in_hw.push(hw_clone),
+                        None => break,
+                    }
+                }
+            }
+            // try right
+            for i in starting_pos + 1..HALLWAY_SIZE {
+                if !front_of_door(i) {
+                    match clone_if_free(&hw, pod, i) {
+                        Some(hw_clone) => in_hw.push(hw_clone),
+                        None => break,
+                    }
+                }
+            }
+
+            fn front_of_door(pos: usize) -> bool {
+                ROOM_POS.contains(&pos)
+            }
+
+            fn clone_if_free(hw: &Hallway, pod: Pod, pos: usize) -> Option<Hallway> {
+                if hw.content[pos].is_none() {
+                    let mut new_hw = hw.clone();
+                    new_hw.content[pos] = Some(pod);
+                    Some(new_hw)
+                } else {
+                    None
+                }
+            }
+
+            in_hw
         }
 
         re
@@ -114,12 +155,43 @@ mod tests {
     #[test]
     fn move_into_empty_hw() {
         let hw = Hallway::new([
-            Room::new(None, Some(Pod::A)),
             Room::new(None, None),
+            Room::new(None, Some(Pod::A)),
             Room::new(None, None),
             Room::new(None, None),
         ]);
         // Amphipods will never stop on the space immediately outside any room.
         assert_eq!(hw.move_to_hw().len(), 7);
+    }
+
+    #[test]
+    fn move_into_hw_with_one_pod() {
+        let hw = Hallway::new([
+            Room::new(None, None),
+            Room::new(Some(Pod::B), Some(Pod::A)),
+            Room::new(None, None),
+            Room::new(None, None),
+        ]);
+        // if one pod blocks path, there are less spaces
+        assert!(hw.move_to_hw()[0].move_to_hw().len() < 7);
+    }
+
+    #[test]
+    fn move_all_pods_to_hw() {
+        let mut hw = Hallway::new([
+            Room::new(None, None),
+            Room::new(Some(Pod::B), Some(Pod::A)),
+            Room::new(None, None),
+            Room::new(None, None),
+        ]);
+
+        for i in 0..2 {
+            hw = match hw.move_to_hw().into_iter().next() {
+                Some(h) => h,
+                None => panic!("No more pods to move after {} steps", i),
+            };
+        }
+
+        assert_eq!(hw.move_to_hw().len(), 0)
     }
 }
