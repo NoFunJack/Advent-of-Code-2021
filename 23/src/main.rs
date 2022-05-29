@@ -1,10 +1,10 @@
 fn main() {
     let hw = Hallway::new(
         [
-            Room::new(Some(Pod::B), Some(Pod::A)),
-            Room::new(Some(Pod::C), Some(Pod::D)),
-            Room::new(Some(Pod::B), Some(Pod::C)),
-            Room::new(Some(Pod::D), Some(Pod::A)),
+            [Some(Pod::B), Some(Pod::A)],
+            [Some(Pod::C), Some(Pod::D)],
+            [Some(Pod::B), Some(Pod::C)],
+            [Some(Pod::D), Some(Pod::A)],
         ],
         0,
     );
@@ -47,10 +47,15 @@ struct Hallway {
 }
 
 impl Hallway {
-    fn new(rooms: [Room; 4], energy: usize) -> Hallway {
+    fn new(rooms: [[Option<Pod>; 2]; 4], energy: usize) -> Hallway {
         Hallway {
             content: [None; 11],
-            rooms,
+            rooms: [
+                Room::new(Pod::A, rooms[0][0], rooms[0][1]),
+                Room::new(Pod::B, rooms[1][0], rooms[1][1]),
+                Room::new(Pod::C, rooms[2][0], rooms[2][1]),
+                Room::new(Pod::D, rooms[3][0], rooms[3][1]),
+            ],
             energy,
         }
     }
@@ -62,10 +67,10 @@ impl Hallway {
     pub fn is_done(&self) -> bool {
         self.rooms
             == [
-                Room::new(Some(Pod::A), Some(Pod::A)),
-                Room::new(Some(Pod::B), Some(Pod::B)),
-                Room::new(Some(Pod::C), Some(Pod::C)),
-                Room::new(Some(Pod::D), Some(Pod::D)),
+                Room::new(Pod::A, Some(Pod::A), Some(Pod::A)),
+                Room::new(Pod::B, Some(Pod::B), Some(Pod::B)),
+                Room::new(Pod::C, Some(Pod::C), Some(Pod::C)),
+                Room::new(Pod::D, Some(Pod::D), Some(Pod::D)),
             ]
     }
 
@@ -130,13 +135,15 @@ impl Hallway {
 
 #[derive(Debug, Clone, PartialEq)]
 struct Room {
+    dest_for: Pod,
     content: [Option<Pod>; 2],
 }
 
 impl Room {
-    fn new(upper: Option<Pod>, lower: Option<Pod>) -> Room {
+    fn new(dest_for: Pod, upper: Option<Pod>, lower: Option<Pod>) -> Room {
         Room {
             content: [upper, lower],
+            dest_for,
         }
     }
 
@@ -158,6 +165,10 @@ impl Room {
     }
 
     pub fn get(&mut self) -> Option<(Pod, usize)> {
+        if self.all_pods_done() {
+            return None;
+        }
+
         if let Some(pod) = self.content[0] {
             Some((self.content[0].take().unwrap(), pod.val()))
         } else if let Some(pod) = self.content[1] {
@@ -165,6 +176,13 @@ impl Room {
         } else {
             None
         }
+    }
+
+    fn all_pods_done(&self) -> bool {
+        self.content
+            .iter()
+            .filter(|t| t.is_some())
+            .all(|p| p.unwrap() == self.dest_for)
     }
 }
 
@@ -202,7 +220,7 @@ mod tests {
 
     #[test]
     fn two_pods_per_room() {
-        let mut room = Room::new(None, None);
+        let mut room = Room::new(Pod::A, None, None);
 
         // move 2 fields deep
         let first_insert = room.add(Pod::A);
@@ -219,20 +237,34 @@ mod tests {
 
     #[test]
     fn get_pods_from_room() {
-        let mut room = Room::new(Some(Pod::A), Some(Pod::B));
+        let mut room = Room::new(Pod::A, Some(Pod::A), Some(Pod::B));
         assert_eq!(room.get().unwrap(), (Pod::A, 1));
         assert_eq!(room.get().unwrap(), (Pod::B, 20));
         assert_eq!(room.get(), None);
     }
 
     #[test]
+    fn do_not_take_out_finished_pod() {
+        let mut room = Room::new(Pod::A, None, Some(Pod::A));
+        assert_eq!(room.get(), None);
+        let mut room = Room::new(Pod::A, Some(Pod::A), Some(Pod::A));
+        assert_eq!(room.get(), None);
+    }
+
+    #[test]
+    fn dont_block_other_non_test_pod() {
+        let mut room = Room::new(Pod::A, Some(Pod::A), Some(Pod::B));
+        assert_eq!(room.get(), Some((Pod::A, 1)));
+    }
+
+    #[test]
     fn move_into_empty_hw() {
         let hw = Hallway::new(
             [
-                Room::new(None, None),
-                Room::new(None, Some(Pod::A)),
-                Room::new(None, None),
-                Room::new(None, None),
+                [None, None],
+                [None, Some(Pod::A)],
+                [None, None],
+                [None, None],
             ],
             0,
         );
@@ -264,10 +296,10 @@ mod tests {
     fn move_into_hw_with_one_pod() {
         let hw = Hallway::new(
             [
-                Room::new(None, None),
-                Room::new(Some(Pod::B), Some(Pod::A)),
-                Room::new(None, None),
-                Room::new(None, None),
+                [None, None],
+                [Some(Pod::B), Some(Pod::A)],
+                [None, None],
+                [None, None],
             ],
             0,
         );
@@ -279,10 +311,10 @@ mod tests {
     fn move_all_pods_to_hw() {
         let mut hw = Hallway::new(
             [
-                Room::new(None, None),
-                Room::new(Some(Pod::B), Some(Pod::A)),
-                Room::new(None, None),
-                Room::new(None, None),
+                [None, None],
+                [Some(Pod::B), Some(Pod::A)],
+                [None, None],
+                [None, None],
             ],
             0,
         );
