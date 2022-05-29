@@ -14,15 +14,20 @@ fn main() {
     let mut debug_count = 0;
     loop {
         println!("States {}", states.len());
-        let cheapest = states.iter().min_by_key(|a| a.energy).unwrap().clone();
-        println!("Cheapest State: {}", cheapest.energy);
 
-        if cheapest.is_done() {
-            println!("Solution found! {:?}", cheapest);
-            return;
+        for it in &states {
+            if it.is_done() {
+                println!("Solution found! {:?}", it);
+                return;
+            }
         }
 
-        states.append(&mut cheapest.get_children());
+        states = states.iter().flat_map(|h| h.get_children()).collect();
+
+        if states.is_empty() {
+            println!("no more ways to to");
+            return;
+        }
 
         debug_count += 1;
         if debug_count > 10 {
