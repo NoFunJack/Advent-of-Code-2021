@@ -1,38 +1,39 @@
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+
 fn main() {
     let hw = Hallway::new(
         [
             [Some(Pod::B), Some(Pod::A)],
+            [Some(Pod::B), Some(Pod::A)],
             [Some(Pod::C), Some(Pod::D)],
-            [Some(Pod::B), Some(Pod::C)],
-            [Some(Pod::D), Some(Pod::A)],
+            [Some(Pod::D), Some(Pod::C)],
         ],
         0,
     );
 
     // init state
-    let mut states = vec![hw];
-    let mut debug_count = 0;
+    let mut states = BinaryHeap::new();
+    states.push(hw);
     loop {
         println!("States {}", states.len());
 
-        for it in &states {
-            if it.is_done() {
-                println!("Solution found! {:?}", it);
+        match states.pop() {
+            Some(s) => {
+                println!("{:?}", s.energy);
+                if s.is_done() {
+                    println!("Solution found! {:?}", s);
+                    return;
+                } else {
+                    for c in s.get_children() {
+                        states.push(c);
+                    }
+                }
+            }
+            None => {
+                println!("no more ways to to");
                 return;
             }
-        }
-
-        states = states.iter().flat_map(|h| h.get_children()).collect();
-
-        if states.is_empty() {
-            println!("no more ways to to");
-            return;
-        }
-
-        debug_count += 1;
-        if debug_count > 10 {
-            //return;
         }
     }
 }
@@ -40,7 +41,7 @@ fn main() {
 const HALLWAY_SIZE: usize = 11;
 const ROOM_POS: [usize; 4] = [2, 4, 6, 8];
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Hallway {
     content: [Option<Pod>; HALLWAY_SIZE],
     rooms: [Room; 4],
@@ -190,7 +191,18 @@ impl Hallway {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl Ord for Hallway {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.energy.cmp(&self.energy)
+    }
+}
+impl PartialOrd for Hallway {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(other.energy.cmp(&self.energy))
+    }
+}
+
+#[derive(Debug, Clone, PartialOrd, PartialEq, Eq)]
 struct Room {
     content: [Option<Pod>; 2],
 }
@@ -241,7 +253,7 @@ impl Room {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Copy, Clone, Eq)]
 enum Pod {
     A,
     B,
