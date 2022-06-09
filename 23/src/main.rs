@@ -5,9 +5,9 @@ fn main() {
     let hw = Hallway::new(
         [
             [Some(Pod::B), Some(Pod::A)],
-            [Some(Pod::B), Some(Pod::A)],
-            [Some(Pod::C), Some(Pod::D)],
-            [Some(Pod::D), Some(Pod::C)],
+            [Some(Pod::A), Some(Pod::B)],
+            [Some(Pod::C), Some(Pod::C)],
+            [Some(Pod::D), Some(Pod::D)],
         ],
         0,
     );
@@ -63,10 +63,10 @@ impl Hallway {
     }
 
     pub fn get_children(&self) -> Vec<Hallway> {
-        let mut re = Vec::new();
-        re.append(&mut self.move_to_hw());
-        re.append(&mut self.move_to_room());
-        re
+        match self.move_to_room() {
+            Some(hw) => vec![hw],
+            None => self.move_to_hw(),
+        }
     }
 
     pub fn is_done(&self) -> bool {
@@ -137,8 +137,7 @@ impl Hallway {
         re
     }
 
-    fn move_to_room(&self) -> Vec<Hallway> {
-        let mut re = Vec::new();
+    fn move_to_room(&self) -> Option<Hallway> {
         for (i, tile) in self.content.iter().enumerate() {
             if let Some(pod) = tile {
                 if let Ok(to_room_cost) = self.pod_can_go_to_room(pod, i) {
@@ -147,12 +146,12 @@ impl Hallway {
                     let room = &mut clone.rooms[Hallway::room_idx(*pod)];
                     if let Some(cost) = room.add(*pod).ok() {
                         clone.energy += cost + to_room_cost;
-                        re.push(clone);
+                        return Some(clone);
                     }
                 }
             }
         }
-        re
+        None
     }
 
     fn pod_can_go_to_room(&self, pod: &Pod, from: usize) -> Result<usize, ()> {
@@ -216,14 +215,14 @@ impl Room {
 
     // returns cost
     pub fn add(&mut self, pod: Pod) -> Result<usize, ()> {
-        match self.content[0] {
+        match self.content[1] {
             None => {
-                self.content[0] = Some(pod);
+                self.content[1] = Some(pod);
                 Ok(2 * pod.val())
             }
-            Some(_) => match self.content[1] {
+            Some(_) => match self.content[0] {
                 None => {
-                    self.content[1] = Some(pod);
+                    self.content[0] = Some(pod);
                     Ok(pod.val())
                 }
                 Some(_) => Err(()),
@@ -412,7 +411,7 @@ mod tests {
                 None,
             ],
             rooms: [
-                Room::new(Some(Pod::A), None),
+                Room::new(None, Some(Pod::A)),
                 Room::new(Some(Pod::B), Some(Pod::B)),
                 Room::new(Some(Pod::C), Some(Pod::C)),
                 Room::new(Some(Pod::D), Some(Pod::D)),
@@ -453,5 +452,36 @@ mod tests {
         let children = hw.get_children();
         assert!(!hw.is_done());
         assert_eq!(children.len(), 0);
+    }
+
+    #[test]
+    fn only_return_one_child_if_pod_reaches_destination() {
+        let hw = Hallway {
+            energy: 0,
+            content: [
+                Some(Pod::A),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(Pod::A),
+            ],
+            rooms: [
+                Room::new(None, None),
+                Room::new(Some(Pod::B), Some(Pod::B)),
+                Room::new(Some(Pod::D), Some(Pod::C)),
+                Room::new(Some(Pod::C), Some(Pod::D)),
+            ],
+        };
+
+        let children1 = hw.get_children();
+        assert_eq!(children1.len(), 1);
+        let children2 = children1[0].get_children();
+        assert_eq!(children2.len(), 1);
     }
 }
