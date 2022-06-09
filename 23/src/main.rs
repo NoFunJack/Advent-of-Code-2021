@@ -167,7 +167,7 @@ impl Hallway {
                 return Err(());
             }
         }
-        Ok(from.abs_diff(door_idx))
+        Ok(from.abs_diff(door_idx) * pod.val())
     }
 
     fn room_idx(pod: Pod) -> usize {
