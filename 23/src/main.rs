@@ -1,11 +1,11 @@
 use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use std::collections::HashSet;
 
 fn main() {
     let hw = Hallway::new(
         [
             [Some(Pod::B), Some(Pod::A)],
-            [Some(Pod::A), Some(Pod::B)],
+            [Some(Pod::B), Some(Pod::A)],
             [Some(Pod::C), Some(Pod::C)],
             [Some(Pod::D), Some(Pod::D)],
         ],
@@ -13,35 +13,44 @@ fn main() {
     );
 
     // init state
-    let mut states = BinaryHeap::new();
-    states.push(hw);
+    let mut states = HashSet::new();
+    states.insert(hw);
     loop {
         println!("States {}", states.len());
 
-        match states.pop() {
-            Some(s) => {
-                println!("{:?}", s.energy);
-                if s.is_done() {
-                    println!("Solution found! {:?}", s);
-                    return;
-                } else {
-                    for c in s.get_children() {
-                        states.push(c);
-                    }
-                }
-            }
-            None => {
-                println!("no more ways to to");
-                return;
+        let s = take_save(&mut states);
+        println!("{:?}", s.energy);
+        if s.is_done() {
+            println!("Solution found! {:?}", s);
+            return;
+        } else {
+            for c in s.get_children() {
+                states.insert(c);
             }
         }
+
+        if s.energy > 11000 {
+            println!("{:?}", s);
+            return;
+        }
     }
+}
+
+fn take_save(set: &mut HashSet<Hallway>) -> Hallway {
+    let min = set
+        .iter()
+        .min_by_key(|hw| hw.energy)
+        .cloned()
+        .expect("No more States");
+
+    set.remove(&min);
+    min
 }
 
 const HALLWAY_SIZE: usize = 11;
 const ROOM_POS: [usize; 4] = [2, 4, 6, 8];
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Hallway {
     content: [Option<Pod>; HALLWAY_SIZE],
     rooms: [Room; 4],
@@ -190,18 +199,13 @@ impl Hallway {
     }
 }
 
-impl Ord for Hallway {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.energy.cmp(&self.energy)
-    }
-}
 impl PartialOrd for Hallway {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(other.energy.cmp(&self.energy))
     }
 }
 
-#[derive(Debug, Clone, PartialOrd, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Room {
     content: [Option<Pod>; 2],
 }
@@ -252,7 +256,7 @@ impl Room {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Copy, Clone, Eq)]
+#[derive(Debug, PartialEq, Copy, Clone, Eq, Hash)]
 enum Pod {
     A,
     B,
@@ -313,6 +317,22 @@ mod tests {
     fn if_all_pods_ok_dont_give_1() {
         let mut room = Room::new(None, Some(Pod::A));
         assert_eq!(room.get(Pod::A), None);
+    }
+
+    #[test]
+    fn if_all_pods_ok_dont_give_2() {
+        let mut room = Room::new(Some(Pod::A), Some(Pod::A));
+        assert_eq!(room.get(Pod::A), None);
+    }
+
+    #[test]
+    fn dont_add_to_room_if_other_pod_occupies() {
+        todo!();
+    }
+
+    #[test]
+    fn dont_add_pod_to_wrong_room() {
+        todo!();
     }
 
     #[test]
