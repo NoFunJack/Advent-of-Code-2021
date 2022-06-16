@@ -4,10 +4,10 @@ use std::collections::HashSet;
 fn main() {
     let hw = Hallway::new(
         [
-            [Some(Pod::B), Some(Pod::A)],
-            [Some(Pod::B), Some(Pod::A)],
-            [Some(Pod::C), Some(Pod::C)],
-            [Some(Pod::D), Some(Pod::D)],
+            [Some(Pod::D), Some(Pod::D), Some(Pod::A), Some(Pod::A)],
+            [Some(Pod::C), Some(Pod::C), Some(Pod::B), Some(Pod::B)],
+            [Some(Pod::A), Some(Pod::B), Some(Pod::C), Some(Pod::C)],
+            [Some(Pod::B), Some(Pod::A), Some(Pod::D), Some(Pod::D)],
         ],
         0,
     );
@@ -29,10 +29,10 @@ fn main() {
             }
         }
 
-        if s.energy > 11000 {
-            println!("{:?}", s);
-            return;
-        }
+        //if s.energy > 11000 {
+        //    println!("{:?}", s);
+        //    return;
+        //}
     }
 }
 
@@ -58,14 +58,14 @@ struct Hallway {
 }
 
 impl Hallway {
-    fn new(rooms: [[Option<Pod>; 2]; 4], energy: usize) -> Hallway {
+    fn new(rooms: [[Option<Pod>; 4]; 4], energy: usize) -> Hallway {
         Hallway {
             content: [None; 11],
             rooms: [
-                Room::new(rooms[0][0], rooms[0][1]),
-                Room::new(rooms[1][0], rooms[1][1]),
-                Room::new(rooms[2][0], rooms[2][1]),
-                Room::new(rooms[3][0], rooms[3][1]),
+                Room::new(rooms[0][0], rooms[0][1], rooms[0][2], rooms[0][3]),
+                Room::new(rooms[1][0], rooms[1][1], rooms[1][2], rooms[1][3]),
+                Room::new(rooms[2][0], rooms[2][1], rooms[2][2], rooms[2][3]),
+                Room::new(rooms[3][0], rooms[3][1], rooms[3][2], rooms[3][3]),
             ],
             energy,
         }
@@ -81,10 +81,10 @@ impl Hallway {
     pub fn is_done(&self) -> bool {
         self.rooms
             == [
-                Room::new(Some(Pod::A), Some(Pod::A)),
-                Room::new(Some(Pod::B), Some(Pod::B)),
-                Room::new(Some(Pod::C), Some(Pod::C)),
-                Room::new(Some(Pod::D), Some(Pod::D)),
+                Room::new(Some(Pod::A), Some(Pod::A), Some(Pod::A), Some(Pod::A)),
+                Room::new(Some(Pod::B), Some(Pod::B), Some(Pod::B), Some(Pod::B)),
+                Room::new(Some(Pod::C), Some(Pod::C), Some(Pod::C), Some(Pod::C)),
+                Room::new(Some(Pod::D), Some(Pod::D), Some(Pod::D), Some(Pod::D)),
             ]
     }
 
@@ -153,7 +153,7 @@ impl Hallway {
                     let mut clone = self.clone();
                     clone.content[i] = None;
                     let room = &mut clone.rooms[Hallway::room_idx(*pod)];
-                    if let Some(cost) = room.add(*pod).ok() {
+                    if let Some(cost) = room.add(*pod, *pod).ok() {
                         clone.energy += cost + to_room_cost;
                         return Some(clone);
                     }
@@ -207,31 +207,42 @@ impl PartialOrd for Hallway {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Room {
-    content: [Option<Pod>; 2],
+    content: [Option<Pod>; 4],
 }
 
 impl Room {
-    fn new(upper: Option<Pod>, lower: Option<Pod>) -> Room {
+    fn new(
+        upper: Option<Pod>,
+        up_mid: Option<Pod>,
+        down_mid: Option<Pod>,
+        lower: Option<Pod>,
+    ) -> Room {
         Room {
-            content: [upper, lower],
+            content: [upper, up_mid, down_mid, lower],
         }
     }
 
     // returns cost
-    pub fn add(&mut self, pod: Pod) -> Result<usize, ()> {
-        match self.content[1] {
-            None => {
-                self.content[1] = Some(pod);
-                Ok(2 * pod.val())
-            }
-            Some(_) => match self.content[0] {
-                None => {
-                    self.content[0] = Some(pod);
-                    Ok(pod.val())
-                }
-                Some(_) => Err(()),
-            },
+    pub fn add(&mut self, pod: Pod, ok_pod: Pod) -> Result<usize, ()> {
+        if pod != ok_pod {
+            return Err(());
         }
+
+        for (i, tile) in self.content.clone().iter().enumerate().rev() {
+            match tile {
+                None => {
+                    self.content[i] = Some(pod);
+                    return Ok((i + 1) * pod.val());
+                }
+                Some(occ_pod) => {
+                    if *occ_pod != ok_pod {
+                        return Err(());
+                    }
+                }
+            }
+        }
+
+        return Err(());
     }
 
     pub fn get(&mut self, ok_pod: Pod) -> Option<(Pod, usize)> {
@@ -239,13 +250,13 @@ impl Room {
             return None;
         }
 
-        if let Some(pod) = self.content[0] {
-            Some((self.content[0].take().unwrap(), pod.val()))
-        } else if let Some(pod) = self.content[1] {
-            Some((self.content[1].take().unwrap(), 2 * pod.val()))
-        } else {
-            None
+        for (i, tile) in self.content.clone().iter().enumerate() {
+            if let Some(occ_pod) = tile {
+                self.content[i] = None;
+                return Some((*occ_pod, (i + 1) * occ_pod.val()));
+            }
         }
+        None
     }
 
     fn all_pods_done(&self, dest: Pod) -> bool {
@@ -290,54 +301,80 @@ mod tests {
 
     #[test]
     fn two_pods_per_room() {
-        let mut room = Room::new(None, None);
+        let mut room = Room::new(None, None, None, None);
+
+        // move 4 fields deep
+        let first_insert = room.add(Pod::A, Pod::A);
+        assert!(first_insert.is_ok());
+        assert_eq!(first_insert.unwrap(), 4);
+
+        // move 3 field deep
+        let first_insert = room.add(Pod::A, Pod::A);
+        assert!(first_insert.is_ok());
+        assert_eq!(first_insert.unwrap(), 3);
 
         // move 2 fields deep
-        let first_insert = room.add(Pod::A);
+        let first_insert = room.add(Pod::A, Pod::A);
         assert!(first_insert.is_ok());
         assert_eq!(first_insert.unwrap(), 2);
 
         // move 1 field deep
-        let first_insert = room.add(Pod::A);
+        let first_insert = room.add(Pod::A, Pod::A);
         assert!(first_insert.is_ok());
         assert_eq!(first_insert.unwrap(), 1);
 
-        assert!(room.add(Pod::A).is_err());
+        assert!(room.add(Pod::A, Pod::A).is_err());
     }
 
     #[test]
     fn get_pods_from_room() {
-        let mut room = Room::new(Some(Pod::A), Some(Pod::B));
+        let mut room = Room::new(Some(Pod::A), Some(Pod::B), Some(Pod::D), Some(Pod::C));
         assert_eq!(room.get(Pod::C).unwrap(), (Pod::A, 1));
         assert_eq!(room.get(Pod::C).unwrap(), (Pod::B, 20));
+        assert_eq!(room.get(Pod::C).unwrap(), (Pod::D, 3000));
+        assert_eq!(room.get(Pod::A).unwrap(), (Pod::C, 400));
         assert_eq!(room.get(Pod::C), None);
     }
 
     #[test]
     fn if_all_pods_ok_dont_give_1() {
-        let mut room = Room::new(None, Some(Pod::A));
+        let mut room = Room::new(None, None, None, Some(Pod::A));
         assert_eq!(room.get(Pod::A), None);
     }
 
     #[test]
     fn if_all_pods_ok_dont_give_2() {
-        let mut room = Room::new(Some(Pod::A), Some(Pod::A));
+        let mut room = Room::new(None, None, Some(Pod::A), Some(Pod::A));
+        assert_eq!(room.get(Pod::A), None);
+    }
+
+    #[test]
+    fn if_all_pods_ok_dont_give_3() {
+        let mut room = Room::new(None, Some(Pod::A), Some(Pod::A), Some(Pod::A));
+        assert_eq!(room.get(Pod::A), None);
+    }
+
+    #[test]
+    fn if_all_pods_ok_dont_give_4() {
+        let mut room = Room::new(Some(Pod::A), Some(Pod::A), Some(Pod::A), Some(Pod::A));
         assert_eq!(room.get(Pod::A), None);
     }
 
     #[test]
     fn dont_add_to_room_if_other_pod_occupies() {
-        todo!();
+        let mut room = Room::new(None, None, None, Some(Pod::B));
+        assert!(room.add(Pod::A, Pod::A).is_err());
     }
 
     #[test]
     fn dont_add_pod_to_wrong_room() {
-        todo!();
+        let mut room = Room::new(None, None, None, None);
+        assert!(room.add(Pod::A, Pod::B).is_err());
     }
 
     #[test]
     fn dont_block_other_non_test_pod() {
-        let mut room = Room::new(Some(Pod::A), Some(Pod::B));
+        let mut room = Room::new(Some(Pod::A), Some(Pod::B), Some(Pod::A), Some(Pod::B));
         assert_eq!(room.get(Pod::C), Some((Pod::A, 1)));
     }
 
@@ -345,21 +382,21 @@ mod tests {
     fn move_into_empty_hw() {
         let hw = Hallway::new(
             [
-                [None, None],
-                [None, Some(Pod::A)],
-                [None, None],
-                [None, None],
+                [None, None, None, None],
+                [None, None, None, Some(Pod::A)],
+                [None, None, None, None],
+                [None, None, None, None],
             ],
             0,
         );
         // Amphipods will never stop on the space immediately outside any room.
         let children = hw.move_to_hw();
         assert_eq!(children.len(), 7);
-        list_contains_n_of_cost(&children, 2, 3);
         list_contains_n_of_cost(&children, 2, 5);
-        list_contains_n_of_cost(&children, 1, 6);
-        list_contains_n_of_cost(&children, 1, 7);
-        list_contains_n_of_cost(&children, 1, 8);
+        list_contains_n_of_cost(&children, 2, 7);
+        list_contains_n_of_cost(&children, 1, 9);
+        list_contains_n_of_cost(&children, 1, 9);
+        list_contains_n_of_cost(&children, 1, 10);
     }
 
     fn list_contains_n_of_cost(children: &[Hallway], expected_num: usize, expected_cost: usize) {
@@ -369,7 +406,7 @@ mod tests {
                 .filter(|&h| h.energy == expected_cost)
                 .count(),
             expected_num,
-            "expcted {} with energy {} in:\n{:#?}",
+            "expcted {} with energy {} in:\n{:?}",
             expected_num,
             expected_cost,
             children
@@ -380,10 +417,10 @@ mod tests {
     fn move_into_hw_with_one_pod() {
         let hw = Hallway::new(
             [
-                [None, None],
-                [Some(Pod::B), Some(Pod::A)],
-                [None, None],
-                [None, None],
+                [None, None, None, None],
+                [None, None, Some(Pod::B), Some(Pod::A)],
+                [None, None, None, None],
+                [None, None, None, None],
             ],
             0,
         );
@@ -395,10 +432,10 @@ mod tests {
     fn move_all_pods_to_hw() {
         let mut hw = Hallway::new(
             [
-                [None, None],
-                [Some(Pod::B), Some(Pod::A)],
-                [None, None],
-                [None, None],
+                [None, None, None, None],
+                [None, None, Some(Pod::B), Some(Pod::A)],
+                [None, None, None, None],
+                [None, None, None, None],
             ],
             0,
         );
@@ -431,10 +468,10 @@ mod tests {
                 None,
             ],
             rooms: [
-                Room::new(None, Some(Pod::A)),
-                Room::new(Some(Pod::B), Some(Pod::B)),
-                Room::new(Some(Pod::C), Some(Pod::C)),
-                Room::new(Some(Pod::D), Some(Pod::D)),
+                Room::new(None, Some(Pod::A), Some(Pod::A), Some(Pod::A)),
+                Room::new(Some(Pod::B), Some(Pod::B), Some(Pod::B), Some(Pod::B)),
+                Room::new(Some(Pod::C), Some(Pod::C), Some(Pod::C), Some(Pod::C)),
+                Room::new(Some(Pod::D), Some(Pod::D), Some(Pod::D), Some(Pod::D)),
             ],
         };
 
@@ -462,10 +499,10 @@ mod tests {
                 None,
             ],
             rooms: [
-                Room::new(Some(Pod::A), Some(Pod::A)),
-                Room::new(Some(Pod::B), Some(Pod::B)),
-                Room::new(Some(Pod::C), Some(Pod::C)),
-                Room::new(Some(Pod::D), None),
+                Room::new(Some(Pod::A), Some(Pod::A), Some(Pod::A), Some(Pod::A)),
+                Room::new(Some(Pod::B), Some(Pod::B), Some(Pod::B), Some(Pod::B)),
+                Room::new(Some(Pod::C), Some(Pod::C), Some(Pod::C), Some(Pod::C)),
+                Room::new(None, None, None, Some(Pod::D)),
             ],
         };
 
@@ -492,10 +529,10 @@ mod tests {
                 Some(Pod::A),
             ],
             rooms: [
-                Room::new(None, None),
-                Room::new(Some(Pod::B), Some(Pod::B)),
-                Room::new(Some(Pod::D), Some(Pod::C)),
-                Room::new(Some(Pod::C), Some(Pod::D)),
+                Room::new(None, None, None, None),
+                Room::new(Some(Pod::B), Some(Pod::B), Some(Pod::B), Some(Pod::B)),
+                Room::new(Some(Pod::D), Some(Pod::C), Some(Pod::D), Some(Pod::C)),
+                Room::new(Some(Pod::C), Some(Pod::D), Some(Pod::C), Some(Pod::D)),
             ],
         };
 
