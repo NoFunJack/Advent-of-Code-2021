@@ -4,10 +4,10 @@ use std::collections::HashSet;
 fn main() {
     let hw = Hallway::new(
         [
-            [Some(Pod::D), Some(Pod::D), Some(Pod::A), Some(Pod::A)],
-            [Some(Pod::C), Some(Pod::C), Some(Pod::B), Some(Pod::B)],
-            [Some(Pod::A), Some(Pod::B), Some(Pod::C), Some(Pod::C)],
-            [Some(Pod::B), Some(Pod::A), Some(Pod::D), Some(Pod::D)],
+            [Some(Pod::D), Some(Pod::D), Some(Pod::D), Some(Pod::D)],
+            [Some(Pod::C), Some(Pod::C), Some(Pod::B), Some(Pod::C)],
+            [Some(Pod::A), Some(Pod::B), Some(Pod::A), Some(Pod::B)],
+            [Some(Pod::B), Some(Pod::A), Some(Pod::C), Some(Pod::A)],
         ],
         0,
     );
