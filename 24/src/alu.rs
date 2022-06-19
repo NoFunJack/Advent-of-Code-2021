@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Memory {
     pub w: i64,
     pub x: i64,
@@ -47,6 +48,8 @@ pub enum Instuction {
     Add(char, LeftSide),
     Mul(char, LeftSide),
     Div(char, LeftSide),
+    Mod(char, LeftSide),
+    Eql(char, LeftSide),
 }
 
 // Left side of operator can be value or adress
@@ -84,6 +87,14 @@ impl ALU {
                 Instuction::Add(r, l) => mem.update(*r, mem.get_valr(*r) + mem.get_vall(l)),
                 Instuction::Mul(r, l) => mem.update(*r, mem.get_valr(*r) * mem.get_vall(l)),
                 Instuction::Div(r, l) => mem.update(*r, mem.get_valr(*r) / mem.get_vall(l)),
+                Instuction::Mod(r, l) => mem.update(*r, mem.get_valr(*r) % mem.get_vall(l)),
+                Instuction::Eql(r, l) => mem.update(
+                    *r,
+                    match mem.get_valr(*r) == mem.get_vall(l) {
+                        true => 1,
+                        false => 0,
+                    },
+                ),
             }
         }
 
@@ -111,6 +122,8 @@ impl ALU {
             Some("add") => Instuction::Add(nextchar(parts.next()), nextval(parts.next())),
             Some("mul") => Instuction::Mul(nextchar(parts.next()), nextval(parts.next())),
             Some("div") => Instuction::Div(nextchar(parts.next()), nextval(parts.next())),
+            Some("mod") => Instuction::Mod(nextchar(parts.next()), nextval(parts.next())),
+            Some("eql") => Instuction::Eql(nextchar(parts.next()), nextval(parts.next())),
             Some(i) => panic!("unknown instruction: {}", i),
             _ => panic!("no first word"),
         }
@@ -122,6 +135,7 @@ mod test {
     use super::*;
 
     fn check_mem(actual: Memory, expected: [i64; 4]) {
+        println!("{:?}", actual);
         assert_eq!(actual.w, expected[0], "wrong value at reg w");
         assert_eq!(actual.x, expected[1], "wrong value at reg x");
         assert_eq!(actual.y, expected[2], "wrong value at reg y");
@@ -195,6 +209,60 @@ mod test {
     fn div_rounding() {
         check_mem(build("inp y\ndiv y 2", "5"), [0, 0, 2, 0]);
         check_mem(build("inp y\ndiv y -2", "5"), [0, 0, -2, 0]);
+    }
+
+    #[test]
+    fn mod_reg() {
+        check_mem(build("inp z\ninp y\nmod z y", "95"), [0, 0, 5, 4]);
+    }
+
+    #[test]
+    fn eql_reg() {
+        check_mem(build("inp z\ninp y\neql z y", "95"), [0, 0, 5, 0]);
+        check_mem(build("inp z\ninp y\neql z y", "99"), [0, 0, 9, 1]);
+    }
+
+    #[test]
+    fn ex_inverter() {
+        let mut alu = ALU::new(String::from("inp x\nmul x -1"));
+
+        check_mem(alu.input(String::from("0")), [0, 0, 0, 0]);
+        check_mem(alu.input(String::from("3")), [0, -3, 0, 0]);
+    }
+
+    #[test]
+    fn ex_comperator() {
+        let mut alu = ALU::new(String::from(
+            "inp z\n\
+            inp x\n\
+            mul z 3\n\
+            eql z x",
+        ));
+
+        assert_eq!(alu.input(String::from("22")).z, 0);
+        assert_eq!(alu.input(String::from("26")).z, 1);
+        assert_eq!(alu.input(String::from("27")).z, 0);
+    }
+
+    #[test]
+    fn ex_binary() {
+        let mut alu = ALU::new(String::from(
+            "inp w\n\
+        add z w\n\
+        mod z 2\n\
+        div w 2\n\
+        add y w\n\
+        mod y 2\n\
+        div w 2\n\
+        add x w\n\
+        mod x 2\n\
+        div w 2\n\
+        mod w 2",
+        ));
+
+        check_mem(alu.input(String::from("0")), [0, 0, 0, 0]);
+        check_mem(alu.input(String::from("3")), [0, 0, 1, 1]);
+        check_mem(alu.input(String::from("8")), [1, 0, 0, 0]);
     }
 
     fn build(instr: &str, input: &str) -> Memory {
