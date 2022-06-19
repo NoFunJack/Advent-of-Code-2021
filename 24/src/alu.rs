@@ -14,10 +14,45 @@ impl Memory {
             z: 0,
         }
     }
+
+    fn update(&mut self, reg: char, data: i64) {
+        match reg {
+            'w' => self.w = data,
+            'x' => self.x = data,
+            'y' => self.y = data,
+            'z' => self.z = data,
+            _ => panic!("unkown register: {}", reg),
+        }
+    }
+    fn get_vall(&self, ls: &LeftSide) -> i64 {
+        match ls {
+            LeftSide::Value(v) => *v,
+            LeftSide::Addr(r) => self.get_valr(*r),
+        }
+    }
+
+    fn get_valr(&self, reg: char) -> i64 {
+        match reg {
+            'w' => self.w,
+            'x' => self.x,
+            'y' => self.y,
+            'z' => self.z,
+            _ => panic!("unkown register: {}", reg),
+        }
+    }
 }
 
 pub enum Instuction {
     Inp(char),
+    Add(char, LeftSide),
+    Mul(char, LeftSide),
+    Div(char, LeftSide),
+}
+
+// Left side of operator can be value or adress
+pub enum LeftSide {
+    Value(i64),
+    Addr(char),
 }
 
 pub struct ALU {
@@ -37,28 +72,45 @@ impl ALU {
 
         for inst in &self.inst {
             match inst {
-                Instuction::Inp(r) => ALU::do_inp(&mut mem, vals.next().unwrap(), *r),
+                Instuction::Inp(r) => {
+                    let next_input = i64::from(
+                        vals.next()
+                            .expect("more input expected")
+                            .to_digit(10)
+                            .unwrap(),
+                    );
+                    mem.update(*r, next_input);
+                }
+                Instuction::Add(r, l) => mem.update(*r, mem.get_valr(*r) + mem.get_vall(l)),
+                Instuction::Mul(r, l) => mem.update(*r, mem.get_valr(*r) * mem.get_vall(l)),
+                Instuction::Div(r, l) => mem.update(*r, mem.get_valr(*r) / mem.get_vall(l)),
             }
         }
 
         mem
     }
 
-    fn do_inp(mem: &mut Memory, data: char, reg: char) {
-        let int = i64::from(data.to_digit(10).unwrap());
-        match reg {
-            'w' => mem.w = int,
-            'x' => mem.x = int,
-            'y' => mem.y = int,
-            'z' => mem.z = int,
-            _ => panic!("unkown register: {}", reg),
-        }
-    }
-
     fn read_inst(s: &str) -> Instuction {
+        fn nextchar(word: Option<&str>) -> char {
+            word.unwrap().chars().next().unwrap()
+        }
+
+        fn nextval(word: Option<&str>) -> LeftSide {
+            let word = word.unwrap();
+            let c = word.chars().next().unwrap();
+            match c {
+                'w'..='z' => LeftSide::Addr(c),
+                _ => LeftSide::Value(word.parse().unwrap()),
+            }
+        }
+
         let mut parts = s.split(' ');
+
         match parts.next() {
-            Some("inp") => Instuction::Inp(parts.next().unwrap().chars().next().unwrap()),
+            Some("inp") => Instuction::Inp(nextchar(parts.next())),
+            Some("add") => Instuction::Add(nextchar(parts.next()), nextval(parts.next())),
+            Some("mul") => Instuction::Mul(nextchar(parts.next()), nextval(parts.next())),
+            Some("div") => Instuction::Div(nextchar(parts.next()), nextval(parts.next())),
             Some(i) => panic!("unknown instruction: {}", i),
             _ => panic!("no first word"),
         }
@@ -78,41 +130,75 @@ mod test {
 
     #[test]
     fn inp_w() {
-        let mut alu = ALU::new(String::from("inp w"));
-        let result = alu.input(String::from("1"));
+        let result = build("inp w", "1");
 
         check_mem(result, [1, 0, 0, 0])
     }
 
     #[test]
     fn inp_x() {
-        let mut alu = ALU::new(String::from("inp x"));
-        let result = alu.input(String::from("2"));
+        let result = build("inp x", "2");
 
         check_mem(result, [0, 2, 0, 0])
     }
 
     #[test]
     fn inp_y() {
-        let mut alu = ALU::new(String::from("inp y"));
-        let result = alu.input(String::from("3"));
+        let result = build("inp y", "3");
 
         check_mem(result, [0, 0, 3, 0])
     }
 
     #[test]
     fn inp_z() {
-        let mut alu = ALU::new(String::from("inp z"));
-        let result = alu.input(String::from("5"));
+        let result = build("inp z", "5");
 
         check_mem(result, [0, 0, 0, 5])
     }
 
     #[test]
     fn inp_many() {
-        let mut alu = ALU::new(String::from("inp w\ninp x\ninp y\ninp z"));
-        let result = alu.input(String::from("9876"));
+        let result = build("inp w\ninp x\ninp y\ninp z", "9876");
 
         check_mem(result, [9, 8, 7, 6])
+    }
+
+    #[test]
+    fn add_pos() {
+        check_mem(build("add w 6", ""), [6, 0, 0, 0]);
+        check_mem(build("add x 5", ""), [0, 5, 0, 0]);
+        check_mem(build("add w 6\nadd w 4", ""), [10, 0, 0, 0]);
+    }
+
+    #[test]
+    fn add_neg() {
+        check_mem(build("add w -6", ""), [-6, 0, 0, 0]);
+        check_mem(build("add x -5", ""), [0, -5, 0, 0]);
+        check_mem(build("add w 6\nadd w -4", ""), [2, 0, 0, 0]);
+    }
+
+    #[test]
+    fn add_reg() {
+        check_mem(build("inp z\ninp y\nadd z y", "23"), [0, 0, 3, 5]);
+    }
+    #[test]
+    fn mul_reg() {
+        check_mem(build("inp z\ninp y\nmul z y", "23"), [0, 0, 3, 6]);
+    }
+
+    #[test]
+    fn div_reg() {
+        check_mem(build("inp z\ninp y\ndiv z y", "93"), [0, 0, 3, 3]);
+    }
+
+    #[test]
+    fn div_rounding() {
+        check_mem(build("inp y\ndiv y 2", "5"), [0, 0, 2, 0]);
+        check_mem(build("inp y\ndiv y -2", "5"), [0, 0, -2, 0]);
+    }
+
+    fn build(instr: &str, input: &str) -> Memory {
+        let mut alu = ALU::new(String::from(instr));
+        return alu.input(String::from(input));
     }
 }
