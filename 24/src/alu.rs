@@ -178,6 +178,12 @@ mod test {
     }
 
     #[test]
+    fn input_left_to_right() {
+        let result = build("inp w\ninp w", "12");
+        assert_eq!(result.w, 2);
+    }
+
+    #[test]
     fn add_pos() {
         check_mem(build("add w 6", ""), [6, 0, 0, 0]);
         check_mem(build("add x 5", ""), [0, 5, 0, 0]);
