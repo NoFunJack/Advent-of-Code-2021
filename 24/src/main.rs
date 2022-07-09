@@ -34,10 +34,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         Step::new(-12, 12),
     ]) {
         let result = alu.input(nr.clone());
-        println!("input {} result: {:?}", nr, result);
+        //println!("input {} result: {:?}", nr, result);
         if result.z == 0 {
             println!("found valid model! {}", nr);
-            return Ok(());
+            //return Ok(());
         }
     }
     Ok(())

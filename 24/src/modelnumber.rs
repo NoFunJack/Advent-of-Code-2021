@@ -20,7 +20,7 @@ impl ModelNumbers {
     fn is_valid(&self, until: usize) -> bool {
         let mut z = 0;
 
-        println!("{}", self.to_str());
+        //println!("{}", self.to_str());
 
         for i in 0..=until {
             let n = i32::from(self.number[i]);
@@ -38,7 +38,7 @@ impl ModelNumbers {
             //);
             if n != x {
                 if self.plan[i].a < 0 {
-                    println!("invalid@{}", i);
+                    //println!("invalid@{}", i);
                     return false;
                 }
                 z *= 26;
