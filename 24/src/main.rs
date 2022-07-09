@@ -37,6 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("input {} result: {:?}", nr, result);
         if result.z == 0 {
             println!("found valid model! {}", nr);
+            return Ok(());
         }
     }
     Ok(())

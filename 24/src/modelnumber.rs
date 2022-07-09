@@ -13,22 +13,35 @@ impl ModelNumbers {
         }
     }
 
-    fn to_str(&mut self) -> String {
+    fn to_str(&self) -> String {
         return self.number.iter().map(|p| p.to_string()).collect();
     }
 
     fn is_valid(&self, until: usize) -> bool {
         let mut z = 0;
 
+        println!("{}", self.to_str());
+
         for i in 0..=until {
             let n = i32::from(self.number[i]);
             let x = (z % 26) + self.plan[i].a;
-            //println!("x: {} z: {} a: {}", x, z, self.plan[i].a);
-            if n == x {
-                println!("invalid!");
-                // never multiply
-                return false;
-            } else {
+            if self.plan[i].a < 0 {
+                z /= 26;
+            }
+            //println!(
+            //    "i: {} x: {} z: {}/{} a: {}",
+            //    i,
+            //    x,
+            //    z,
+            //    z % 26,
+            //    self.plan[i].a
+            //);
+            if n != x {
+                if self.plan[i].a < 0 {
+                    println!("invalid@{}", i);
+                    return false;
+                }
+                z *= 26;
                 z += n + self.plan[i].b;
             }
         }
@@ -37,6 +50,9 @@ impl ModelNumbers {
     }
 
     fn decrease_at(&mut self, pos: usize) -> Result<(), ()> {
+        for i in (pos + 1)..self.number.len() {
+            self.number[i] = 9;
+        }
         match self.number[pos] {
             2..=9 => {
                 self.number[pos] = self.number[pos].checked_sub(1).unwrap();
@@ -44,9 +60,6 @@ impl ModelNumbers {
             }
             1 => {
                 if pos > 0 {
-                    for i in pos..self.number.len() {
-                        self.number[i] = 9;
-                    }
                     self.decrease_at(pos - 1)
                 } else {
                     Err(())
@@ -60,7 +73,6 @@ impl ModelNumbers {
 impl Iterator for ModelNumbers {
     type Item = String;
     fn next(&mut self) -> Option<Self::Item> {
-        //        println!("current: {:?}", self.number);
         if self.exausted {
             return None;
         }
@@ -69,13 +81,13 @@ impl Iterator for ModelNumbers {
         let mut i = 0;
         loop {
             //println!("loop {}", i);
+            //println!("{}", self.to_str());
             if self.is_valid(i) {
                 i += 1;
             } else {
-                match self.decrease_at(i - 1) {
-                    Ok(_) => break,
-                    Err(_) => {
-                        self.exausted = true;
+                match self.decrease_at(i) {
+                    Err(_) => panic!("decrease error"),
+                    Ok(_) => {
                         return Some(current.iter().map(|p| p.to_string()).collect());
                     }
                 };
@@ -167,15 +179,14 @@ mod test {
 
     #[test]
     fn skip_invalid_candiates() {
-        let plan = vec![Step::new(11, 14), Step::new(-3, 14)];
+        let plan = vec![Step::new(11, 24), Step::new(-4, 16)];
 
         //let mut iter = ModelNumbers::new(plan);
 
-        println!("{:?}", ModelNumbers::new(plan).collect::<Vec<String>>());
+        let valid_numbers = ModelNumbers::new(plan).collect::<Vec<String>>();
+        println!("{:#?}", valid_numbers);
 
-        //assert_eq!(iter.next(), Some("99".to_string()));
-        //assert_eq!(iter.next(), None);
-
-        todo!()
+        assert!(valid_numbers.len() < 1951);
+        todo!();
     }
 }

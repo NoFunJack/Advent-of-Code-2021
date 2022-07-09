@@ -43,6 +43,7 @@ impl Memory {
     }
 }
 
+#[derive(Debug)]
 pub enum Instuction {
     Inp(char),
     Add(char, LeftSide),
@@ -53,6 +54,7 @@ pub enum Instuction {
 }
 
 // Left side of operator can be value or adress
+#[derive(Debug)]
 pub enum LeftSide {
     Value(i64),
     Addr(char),
@@ -96,6 +98,7 @@ impl ALU {
                     },
                 ),
             }
+            //println!("inst: {:?}, mem: {:?}", inst, mem);
         }
 
         mem
