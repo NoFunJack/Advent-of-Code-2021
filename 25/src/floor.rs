@@ -3,17 +3,18 @@ use std::fmt::Display;
 
 use crate::floor::Tile::*;
 
-struct Floor {
+pub struct Floor {
     fields: Vec<Vec<Option<Tile>>>,
 }
 
-enum Tile {
+#[derive(Debug)]
+pub enum Tile {
     East,
     South,
 }
 
 impl Floor {
-    fn new(floorStr: String) -> Floor {
+    pub fn new(floorStr: String) -> Floor {
         Floor {
             fields: floorStr
                 .lines()
@@ -28,6 +29,39 @@ impl Floor {
                         .collect()
                 })
                 .collect(),
+        }
+    }
+
+    pub fn step(&mut self) {
+        self.move_east();
+    }
+
+    fn move_east(&mut self) {
+        for row in &mut self.fields {
+            Floor::advance(row);
+        }
+    }
+
+    fn advance(cucumbers: &mut [Option<Tile>]) {
+        let mut i = 0;
+        while i < cucumbers.len() {
+            let j;
+            if i == cucumbers.len() - 1 {
+                j = 0;
+            } else {
+                j = i + 1;
+            }
+            println!("{}/{} {:?}:{:?}", i, j, cucumbers[i], cucumbers[j]);
+            if let Some(East) = cucumbers[i] {
+                if let None = cucumbers[j] {
+                    println!("movement");
+                    cucumbers[i] = None;
+                    cucumbers[j] = Some(East);
+                    // skip next one
+                    i += 1;
+                }
+            }
+            i += 1;
         }
     }
 }
@@ -61,5 +95,15 @@ mod test {
         let f = Floor::new(String::from(".>\nv."));
 
         assert_eq!(format!("{f}"), ".>\nv.\n");
+    }
+
+    #[test]
+    fn move_east() {
+        let mut f = Floor::new(String::from("...>>>>>..."));
+
+        f.step();
+        assert_eq!(format!("{f}"), "...>>>>.>..\n");
+        f.step();
+        assert_eq!(format!("{f}"), "...>>>.>.>.\n");
     }
 }
