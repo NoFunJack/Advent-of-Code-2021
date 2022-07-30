@@ -4,7 +4,8 @@ use std::fmt::Display;
 use crate::floor::Tile::*;
 
 pub struct Floor {
-    fields: Vec<Vec<Option<Tile>>>,
+    rowsize: usize,
+    fields: Vec<Option<Tile>>,
 }
 
 #[derive(Debug)]
@@ -16,9 +17,10 @@ pub enum Tile {
 impl Floor {
     pub fn new(floorStr: String) -> Floor {
         Floor {
+            rowsize: floorStr.find("\n").unwrap_or(floorStr.len()),
             fields: floorStr
                 .lines()
-                .map(|line| {
+                .flat_map(|line| {
                     line.chars()
                         .map(|c| match c {
                             '>' => Some(East),
@@ -26,7 +28,7 @@ impl Floor {
                             '.' => None,
                             _ => panic!("Unkown floor tile {}", c),
                         })
-                        .collect()
+                        .collect::<Vec<Option<Tile>>>()
                 })
                 .collect(),
         }
@@ -34,12 +36,17 @@ impl Floor {
 
     pub fn step(&mut self) {
         self.move_east();
+        self.move_south();
     }
 
     fn move_east(&mut self) {
-        for row in &mut self.fields {
-            Floor::advance(row);
+        for i in (0..self.rowsize).step_by(self.rowsize) {
+            Floor::advance(&mut self.fields[i..i + self.rowsize]);
         }
+    }
+
+    fn move_south(&mut self) {
+        todo!("move south");
     }
 
     fn advance(cucumbers: &mut [Option<Tile>]) {
@@ -68,17 +75,16 @@ impl Floor {
 
 impl Display for Floor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut re =
-            String::with_capacity(self.fields.len() * (self.fields.get(0).unwrap().len() + 1));
-        for line in &self.fields {
-            for tile in line {
-                re.push(match tile {
-                    Some(East) => '>',
-                    Some(South) => 'v',
-                    None => '.',
-                });
+        let mut re = String::with_capacity(self.fields.len() + (self.fields.len() / self.rowsize));
+        for (i, tile) in self.fields.iter().enumerate() {
+            re.push(match tile {
+                Some(East) => '>',
+                Some(South) => 'v',
+                None => '.',
+            });
+            if (i + 1) % self.rowsize == 0 {
+                re.push('\n');
             }
-            re.push('\n');
         }
 
         write!(f, "{}", re)
@@ -105,5 +111,17 @@ mod test {
         assert_eq!(format!("{f}"), "...>>>>.>..\n");
         f.step();
         assert_eq!(format!("{f}"), "...>>>.>.>.\n");
+    }
+
+    #[test]
+    fn move_south() {
+        let mut f = Floor::new(String::from(".\nv\nv\n.\n."));
+
+        f.step();
+        assert_eq!(format!("{f}"), ".\n.\nv\nv\n.\n");
+        f.step();
+        assert_eq!(format!("{f}"), ".\n.\nv\n.\nv\n");
+        f.step();
+        assert_eq!(format!("{f}"), "v\n.\n.\nv\n.\n");
     }
 }
