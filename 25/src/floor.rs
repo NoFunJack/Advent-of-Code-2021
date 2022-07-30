@@ -8,7 +8,7 @@ pub struct Floor {
     fields: Vec<Option<Tile>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Tile {
     East,
     South,
@@ -40,35 +40,39 @@ impl Floor {
     }
 
     fn move_east(&mut self) {
-        for i in (0..self.rowsize).step_by(self.rowsize) {
-            Floor::advance(&mut self.fields[i..i + self.rowsize]);
+        println!("~move east");
+        for i in (0..(self.fields.len() / self.rowsize)).step_by(self.rowsize) {
+            Floor::advance(&mut self.fields[i..i + self.rowsize], 1, Tile::East);
         }
     }
 
     fn move_south(&mut self) {
-        //todo!("move south");
+        println!("~move south");
+        for _i in 0..self.rowsize {
+            Floor::advance(&mut self.fields, self.rowsize, Tile::South);
+        }
     }
 
-    fn advance(cucumbers: &mut [Option<Tile>]) {
+    fn advance(cucumbers: &mut [Option<Tile>], stepsize: usize, moving: Tile) {
         let mut i = 0;
         while i < cucumbers.len() {
             let j;
-            if i == cucumbers.len() - 1 {
+            if i >= cucumbers.len() - stepsize {
                 j = 0;
             } else {
-                j = i + 1;
+                j = i + stepsize;
             }
             println!("{}/{} {:?}:{:?}", i, j, cucumbers[i], cucumbers[j]);
-            if let Some(East) = cucumbers[i] {
+            if cucumbers[i] == Some(moving) {
                 if let None = cucumbers[j] {
                     println!("movement");
                     cucumbers[i] = None;
-                    cucumbers[j] = Some(East);
+                    cucumbers[j] = Some(moving);
                     // skip next one
-                    i += 1;
+                    i += stepsize;
                 }
             }
-            i += 1;
+            i += stepsize;
         }
     }
 }
@@ -118,7 +122,7 @@ mod test {
         let mut f = Floor::new(String::from(".\nv\nv\n.\n."));
 
         f.step();
-        assert_eq!(format!("{f}"), ".\n.\nv\nv\n.\n");
+        assert_eq!(format!("{f}"), ".\nv\n.\nv\n.\n");
         f.step();
         assert_eq!(format!("{f}"), ".\n.\nv\n.\nv\n");
         f.step();
