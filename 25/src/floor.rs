@@ -41,15 +41,15 @@ impl Floor {
 
     fn move_east(&mut self) {
         println!("~move east");
-        for i in (0..(self.fields.len() / self.rowsize)).step_by(self.rowsize) {
+        for i in (0..self.fields.len()).step_by(self.rowsize) {
             Floor::advance(&mut self.fields[i..i + self.rowsize], 1, Tile::East);
         }
     }
 
     fn move_south(&mut self) {
         println!("~move south");
-        for _i in 0..self.rowsize {
-            Floor::advance(&mut self.fields, self.rowsize, Tile::South);
+        for i in 0..self.rowsize {
+            Floor::advance(&mut self.fields[i..], self.rowsize, Tile::South);
         }
     }
 
@@ -57,8 +57,10 @@ impl Floor {
         let mut i = 0;
         while i < cucumbers.len() {
             let j;
-            if i >= cucumbers.len() - stepsize {
-                j = 0;
+            println!("DEBUG {} {stepsize}", cucumbers.len());
+            if i + stepsize >= cucumbers.len() {
+                print!("wrap: ");
+                j = i % stepsize;
             } else {
                 j = i + stepsize;
             }
@@ -127,5 +129,79 @@ mod test {
         assert_eq!(format!("{f}"), ".\n.\nv\n.\nv\n");
         f.step();
         assert_eq!(format!("{f}"), "v\n.\n.\nv\n.\n");
+    }
+
+    #[test]
+    fn lr_wrap() {
+        let mut f = Floor::new(String::from("..>"));
+
+        f.step();
+        assert_eq!(format!("{f}"), ">..\n");
+    }
+
+    #[test]
+    fn up_down_wrap() {
+        let mut f = Floor::new(String::from(".\n.\nv"));
+
+        f.step();
+        assert_eq!(format!("{f}"), "v\n.\n.\n");
+    }
+
+    #[test]
+    fn website_example_1() {
+        let mut f = Floor::new(String::from(
+            "...>...\n\
+             .......\n\
+             ......>\n\
+             v.....>\n\
+             ......>\n\
+             .......\n\
+             ..vvv..",
+        ));
+
+        f.step();
+        assert_eq!(
+            format!("{f}"),
+            "..vv>..\n\
+             .......\n\
+             >......\n\
+             v.....>\n\
+             >......\n\
+             .......\n\
+             ....v..\n"
+        );
+        f.step();
+        assert_eq!(
+            format!("{f}"),
+            "....v>.\n\
+             ..vv...\n\
+             .>.....\n\
+             ......>\n\
+             v>.....\n\
+             .......\n\
+             .......\n"
+        );
+        f.step();
+        assert_eq!(
+            format!("{f}"),
+            "......>\n\
+             ..v.v..\n\
+             ..>v...\n\
+             >......\n\
+             ..>....\n\
+             v......\n\
+             .......\n"
+        );
+        f.step();
+        assert_eq!(
+            format!("{f}"),
+            ">......\n\
+             ..v....\n\
+             ..>.v..\n\
+             .>.v...\n\
+             ...>...\n\
+             .......\n\
+             v......\n"
+        );
     }
 }
