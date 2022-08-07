@@ -59,9 +59,14 @@ impl Floor {
     fn advance(cucumbers: &mut [Option<Tile>], stepsize: usize, moving: Tile) -> usize {
         let mut i = 0;
         let mut moves = 0;
+        let first_occ = cucumbers[i] == Some(moving);
+
         while i < cucumbers.len() {
             let j;
             if i + stepsize >= cucumbers.len() {
+                if first_occ {
+                    return moves;
+                }
                 //print!("wrap: ");
                 j = i % stepsize;
             } else {
@@ -168,6 +173,22 @@ mod test {
     }
 
     #[test]
+    fn blocking() {
+        let mut f = Floor::new(String::from(">v\n.."));
+        f.step();
+        assert_eq!(format!("{f}"), ">.\n.v\n");
+        f.step();
+        assert_eq!(format!("{f}"), ".>\n.v\n");
+    }
+
+    #[test]
+    fn blocking_south_wrap() {
+        let mut f = Floor::new(String::from("v\n.\nv"));
+        f.step();
+        assert_eq!(format!("{f}"), ".\nv\nv\n");
+    }
+
+    #[test]
     fn website_example_1() {
         let mut f = Floor::new(String::from(
             "...>...\n\
@@ -243,14 +264,14 @@ mod test {
         assert_eq!(
             format!("{f}"),
             "....>.>v.>\n\
- v.v>.>v.v.\n\
- >v>>..>v..\n\
- >>v>v>.>.v\n\
- .>v.v...v.\n\
- v>>.>vvv..\n\
- ..v...>>..\n\
- vv...>>vv.\n\
- >.v.v..v.v\n"
+             v.v>.>v.v.\n\
+             >v>>..>v..\n\
+             >>v>v>.>.v\n\
+             .>v.v...v.\n\
+             v>>.>vvv..\n\
+             ..v...>>..\n\
+             vv...>>vv.\n\
+             >.v.v..v.v\n"
         );
 
         // 2
@@ -258,17 +279,32 @@ mod test {
         assert_eq!(
             format!("{f}"),
             ">.v.v>>..v\n\
-v.v.>>vv..\n\
->v>.>.>.v.\n\
->>v>v.>v>.\n\
-.>..v....v\n\
-.>v>>.v.v.\n\
-v....v>v>.\n\
-.vv..>>v..\n\
-v>.....vv.\n"
+             v.v.>>vv..\n\
+             >v>.>.>.v.\n\
+             >>v>v.>v>.\n\
+             .>..v....v\n\
+             .>v>>.v.v.\n\
+             v....v>v>.\n\
+             .vv..>>v..\n\
+             v>.....vv.\n"
         );
 
-        for _i in 0..=58 {
+        // 3
+        assert_eq!(f.step(), true);
+        assert_eq!(
+            format!("{f}"),
+            "v>v.v>.>v.\n\
+             v...>>.v.v\n\
+             >vv>.>v>..\n\
+             >>v>v.>.v>\n\
+             ..>....v..\n\
+             .>.>v>v..v\n\
+             ..v..v>vv>\n\
+             v.v..>>v..\n\
+             .v>....v..\n"
+        );
+
+        for _i in 4..58 {
             assert_eq!(f.step(), true);
         }
         assert_eq!(f.step(), false);
