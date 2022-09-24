@@ -12,7 +12,7 @@ char getEnder(char begin) {
   case '<':
     return '>';
   default:
-    fprintf(stderr, "Unknown char %c", begin);
+    fprintf(stderr, "Unknown char %c\n", begin);
     return -1;
   }
 }
@@ -28,7 +28,7 @@ int getScore(char end) {
   case '>':
     return 25137;
   default:
-    fprintf(stderr, "Invalid char: %c", end);
+    fprintf(stderr, "Invalid char: %c\n", end);
     return -1;
   }
 }
@@ -40,18 +40,27 @@ int checkChunk(char openChar, char *start, char *end) {
     putchar(*p);
   putchar('\n');
 
+  if (getEnder(openChar) == -1) {
+    printf("non opener Found\n");
+    return getScore(openChar);
+  }
+
   if (end - start == 0) {
 
     int score = getScore(*end);
-    printf("found \"%c\" Score: %d\n", *end, score);
-    return score;
+    if (score > 0) {
+      printf("found \"%c\" Score: %d\n", *end, score);
+      return score;
+    } else {
+      return 0;
+    }
   }
 
   int depth = 0;
   bool foundMatch = false;
   char *p = start + 1;
   for (; p <= end; p++) {
-    printf("char %c\n", *p);
+    // printf("char %c\n", *p);
     if (*p == openChar)
       depth++;
 
@@ -93,19 +102,24 @@ int checkChunk(char openChar, char *start, char *end) {
 int main(int argc, char **argv) {
 
   char line[1000];
-  fscanf(stdin, "%s", line);
+  int totalScore = 0;
+  while (fscanf(stdin, "%s", line) != EOF) {
 
-  // find end of line
-  char *end;
-  for (int i = 0; line[i] != '\0'; i++) {
-    end = &line[i];
-    if (*end == '\n')
-      break;
+    // find end of line
+    char *end;
+    for (int i = 0; line[i] != '\0'; i++) {
+      end = &line[i];
+      if (*end == '\n')
+        break;
+    }
+
+    int score = checkChunk(line[0], &line[0], end);
+    totalScore = totalScore + score;
+
+    printf("input: %s, score %d\n\n", line, score);
   }
 
-  int score = checkChunk(line[0], &line[0], end);
-
-  printf("input: %s, score %d", line, score);
+  printf("Total Score: %d", totalScore);
 
   return 0;
 }
