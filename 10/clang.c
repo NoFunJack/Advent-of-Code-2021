@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 
 char getEnder(char begin) {
@@ -34,21 +35,43 @@ int getScore(char end) {
 
 int checkChunk(char openChar, char *start, char *end) {
 
-  if (end - start == 1) {
-    printf("@hook@\n");
-    return 0;
+  printf("checking Chunk from %c Chunk:", openChar);
+  for (char *p = start; p <= end; p++)
+    putchar(*p);
+  putchar('\n');
+
+  if (end - start == 0) {
+
+    int score = getScore(*end);
+    printf("found \"%c\" Score: %d\n", *end, score);
+    return score;
   }
 
   int depth = 0;
-
-  for (char *p = start + 1; p <= end; p++) {
+  bool foundMatch = false;
+  char *p = start + 1;
+  for (; p <= end; p++) {
     printf("char %c\n", *p);
     if (*p == openChar)
       depth++;
 
     if (*p == getEnder(openChar)) {
       if (depth == 0) {
-        printf("found match %ld", p - start);
+        printf("found match %ld\n", p - start);
+
+        if (start + 1 != p) {
+          // check inside chunk
+          int inner = checkChunk(*(start + 1), start + 1, p - 1);
+          if (inner != 0) {
+            return inner;
+          }
+        }
+
+        if (end - p > 0) {
+          // check rest of String
+          printf("checking rest\n");
+          return checkChunk(*(p + 1), p + 1, end);
+        }
 
         // all okay
         return 0;
@@ -57,8 +80,14 @@ int checkChunk(char openChar, char *start, char *end) {
     }
   }
 
-  // all okay
-  return 0;
+  // ignore unmachted openners
+  if (!foundMatch) {
+    printf("no matching closer found\n");
+    return checkChunk(*(start + 1), start + 1, end);
+  } else {
+    // all okay
+    return 0;
+  }
 }
 
 int main(int argc, char **argv) {
