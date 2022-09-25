@@ -33,7 +33,7 @@ int getScore(char end) {
   }
 }
 
-int checkChunk(char openChar, char *start, char *end) {
+int checkChunk(char openChar, char *start, char *end, char endChar) {
 
   printf("checking Chunk from %c Chunk:", openChar);
   for (char *p = start; p <= end; p++)
@@ -70,7 +70,7 @@ int checkChunk(char openChar, char *start, char *end) {
 
         if (start + 1 != p) {
           // check inside chunk
-          int inner = checkChunk(*(start + 1), start + 1, p - 1);
+          int inner = checkChunk(*(start + 1), start + 1, p - 1, *p);
           if (inner != 0) {
             return inner;
           }
@@ -79,7 +79,7 @@ int checkChunk(char openChar, char *start, char *end) {
         if (end - p > 0) {
           // check rest of String
           printf("checking rest\n");
-          return checkChunk(*(p + 1), p + 1, end);
+          return checkChunk(*(p + 1), p + 1, end, endChar);
         }
 
         // all okay
@@ -91,8 +91,14 @@ int checkChunk(char openChar, char *start, char *end) {
 
   // ignore unmachted openners
   if (!foundMatch) {
-    printf("no matching closer found\n");
-    return checkChunk(*(start + 1), start + 1, end);
+    if (endChar == 0) {
+      printf("no matching closer found\n");
+      return checkChunk(*(start + 1), start + 1, end, 0);
+    } else {
+      // inner Chunk invalid
+      printf("inner chunk not complete\n");
+      return getScore(endChar);
+    }
   } else {
     // all okay
     return 0;
@@ -113,7 +119,7 @@ int main(int argc, char **argv) {
         break;
     }
 
-    int score = checkChunk(line[0], &line[0], end);
+    int score = checkChunk(line[0], &line[0], end, 0);
     totalScore = totalScore + score;
 
     printf("input: %s, score %d\n\n", line, score);
