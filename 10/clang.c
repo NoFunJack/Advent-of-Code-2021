@@ -12,7 +12,7 @@ char getEnder(char begin) {
   case '<':
     return '>';
   default:
-    fprintf(stderr, "Unknown char %c\n", begin);
+    fprintf(stderr, "ERROR Unknown char %c\n", begin);
     return -1;
   }
 }
@@ -28,7 +28,7 @@ int getScore(char end) {
   case '>':
     return 25137;
   default:
-    fprintf(stderr, "Invalid char: %c\n", end);
+    fprintf(stderr, "ERROR Invalid char: %c\n", end);
     return -1;
   }
 }
@@ -41,19 +41,13 @@ int checkChunk(char openChar, char *start, char *end, char endChar) {
   putchar('\n');
 
   if (getEnder(openChar) == -1) {
-    printf("non opener Found\n");
+    printf("non opener Found(endchar %c)\n", endChar);
     return getScore(openChar);
   }
 
   if (end - start == 0) {
-
+    return getScore(*end);
     int score = getScore(*end);
-    if (score > 0) {
-      printf("found \"%c\" Score: %d\n", *end, score);
-      return score;
-    } else {
-      return 0;
-    }
   }
 
   int depth = 0;
@@ -69,17 +63,25 @@ int checkChunk(char openChar, char *start, char *end, char endChar) {
         printf("found match %ld\n", p - start);
 
         if (start + 1 != p) {
-          // check inside chunk
+          printf("check inside chunk (endchar: %c)\n", endChar);
           int inner = checkChunk(*(start + 1), start + 1, p - 1, *p);
-          if (inner != 0) {
+          if (inner > 0) {
             return inner;
+          } else if (inner < 0) {
+            printf("invalid closer %c\n", *p);
+            return getScore(*p);
           }
         }
 
         if (end - p > 0) {
           // check rest of String
-          printf("checking rest\n");
-          return checkChunk(*(p + 1), p + 1, end, endChar);
+          printf("checking rest(endchar: %c)\n", endChar);
+          int rest = checkChunk(*(p + 1), p + 1, end, endChar);
+          if (rest > 0) {
+            return rest;
+          } else if (rest < 0 && endChar != 0) {
+            return getScore(*p);
+          }
         }
 
         // all okay
