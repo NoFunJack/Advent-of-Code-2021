@@ -24,13 +24,22 @@ impl Stack {
 
     fn push(&mut self, c: char) -> Result<(), usize> {
         match closer_of(c) {
-            Ok(closer) => {
+            MirrorChar::Closer(closer) => {
                 self.expected_closer.push(closer);
                 Ok(())
             }
-            Err(_) => {
-                println!("expected {:?} but found {}", self.expected_closer.last(), c);
-                Err(score_of(c))
+            MirrorChar::IsCloser => {
+                if let Some(exp_closer) = self.expected_closer.pop() {
+                    if exp_closer == c {
+                        return Ok(());
+                    } else {
+                        println!("expected {:?} but found {}", self.expected_closer.last(), c);
+                        Err(score_of(c))
+                    }
+                } else {
+                    println!("expected {:?} but found {}", self.expected_closer.last(), c);
+                    Err(score_of(c))
+                }
             }
         }
     }
@@ -46,14 +55,19 @@ fn score_of(c: char) -> usize {
     }
 }
 
-fn closer_of(c: char) -> Result<char, ()> {
+fn closer_of(c: char) -> MirrorChar {
     match c {
-        '(' => Ok(')'),
-        '[' => Ok(']'),
-        '{' => Ok('}'),
-        '<' => Ok('>'),
-        _ => Err(()),
+        '(' => MirrorChar::Closer(')'),
+        '[' => MirrorChar::Closer(']'),
+        '{' => MirrorChar::Closer('}'),
+        '<' => MirrorChar::Closer('>'),
+        _ => MirrorChar::IsCloser,
     }
+}
+
+enum MirrorChar {
+    Closer(char),
+    IsCloser,
 }
 
 #[cfg(test)]
@@ -78,5 +92,21 @@ mod test {
         assert_eq!(check("{()()()>".to_string()), score_of('>'));
         assert_eq!(check("(((()))}".to_string()), score_of('}'));
         assert_eq!(check("<([]){()}[{}])".to_string()), score_of(')'));
+    }
+
+    #[test]
+    fn incomplete_is_ok() {
+        assert_eq!(check("[".to_string()), 0);
+        assert_eq!(check("<<[<>]".to_string()), 0);
+        assert_eq!(check("{{{[{}]".to_string()), 0);
+    }
+
+    #[test]
+    fn complex_examples() {
+        assert_eq!(check("{([(<{}[<>[]}>{[]{[(<()>".to_string()), score_of('}'));
+        assert_eq!(check("[[<[([]))<([[{}[[()]]]".to_string()), score_of(')'));
+        assert_eq!(check("[{[{({}]{}}([{[{{{}}([]".to_string()), score_of(']'));
+        assert_eq!(check("[<(<(<(<{}))><([]([]()".to_string()), score_of(')'));
+        assert_eq!(check("<{([([[(<>()){}]>(<<{{".to_string()), score_of('>'));
     }
 }
