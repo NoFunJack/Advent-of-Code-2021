@@ -3,7 +3,7 @@ use Number::{Pair, Value};
 
 #[derive(PartialEq, Eq)]
 pub enum Number {
-    Pair(Rc<RefCell<Number>>, Rc<RefCell<Number>>),
+    Pair(Box<Number>, Box<Number>),
     Value(isize),
 }
 
@@ -13,19 +13,92 @@ impl Number {
     }
 
     fn new(left: Number, right: Number) -> Number {
-        Pair(Rc::new(RefCell::new(left)), Rc::new(RefCell::new(right)))
-    }
-
-    fn leafs_mut(start: Rc<RefCell<Number>>) -> SnailNumberIter {
-        SnailNumberIter::from(start)
+        Pair(Box::new(left), Box::new(right))
     }
 
     fn explode_first_deep_number(&mut self) {
-        self.explode_int(0);
+        if let Pair(left, right) = self {
+            if !left.explode_int(1, None, Some(right)) {
+                right.explode_int(1, Some(left), None);
+            }
+        } else {
+            panic!("root number is not a pair");
+        }
     }
 
-    fn explode_int(&mut self, depth: usize) -> (Option<isize>, Option<isize>) {
-        todo!();
+    fn explode_int(
+        &mut self,
+        depth: usize,
+        next_left: Option<&mut Box<Number>>,
+        next_right: Option<&mut Box<Number>>,
+    ) -> bool {
+        println!("Checking {:?} depth: {}", self, depth);
+        println!("left {:?} right {:?}", next_left, next_right);
+        if let Pair(l, r) = self {
+            if depth == 3 {
+                // Left one is Pair
+                if let Pair(il, ir) = &**l {
+                    println!("Exploding {:?}", l);
+                    if let Some(nl) = next_left {
+                        nl.add_right_value(il.get_value_if_value());
+                    }
+                    r.add_left_value(ir.get_value_if_value());
+                    *l = Box::new(Value(0));
+                    return true;
+                }
+                // Right one is Pair
+                if let Pair(il, ir) = &**r {
+                    println!("Exploding {:?}", r);
+                    if let Some(nr) = next_right {
+                        nr.add_left_value(ir.get_value_if_value());
+                    }
+                    l.add_right_value(il.get_value_if_value());
+                    *r = Box::new(Value(0));
+                    return true;
+                }
+
+                return false;
+            } else {
+                l.explode_int(depth + 1, next_left, Some(r))
+                    || r.explode_int(depth + 1, Some(l), next_right)
+            }
+        } else {
+            false
+        }
+    }
+
+    fn add_left_value(&mut self, to_add: Option<isize>) {
+        if let Value(x) = self {
+            if let Some(a) = to_add {
+                println!("Adding {} to {}", a, x);
+                *x += a;
+            }
+        } else {
+            if let Pair(l, _) = self {
+                l.add_left_value(to_add);
+            }
+        }
+    }
+
+    fn add_right_value(&mut self, to_add: Option<isize>) {
+        if let Value(x) = self {
+            if let Some(a) = to_add {
+                println!("Adding {} to {}", a, x);
+                *x += a;
+            }
+        } else {
+            if let Pair(_, r) = self {
+                r.add_right_value(to_add);
+            }
+        }
+    }
+
+    fn get_value_if_value(&self) -> Option<isize> {
+        if let Value(x) = self {
+            Some(*x)
+        } else {
+            None
+        }
     }
 }
 
@@ -35,24 +108,6 @@ impl Debug for Number {
             Self::Pair(l, r) => write!(f, "[{:?},{:?}]", l, r),
             Self::Value(v) => write!(f, "{}", v),
         }
-    }
-}
-
-struct SnailNumberIter {
-    current: Rc<RefCell<Number>>,
-}
-
-impl SnailNumberIter {
-    fn from(root: Rc<RefCell<Number>>) -> SnailNumberIter {
-        SnailNumberIter { current: root }
-    }
-}
-
-impl Iterator for SnailNumberIter {
-    type Item = Rc<Number>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
     }
 }
 
@@ -110,8 +165,8 @@ mod test {
         let n = phase_str("[[1,3],2]");
         match n {
             Pair(left, right) => {
-                assert_eq!(*left.borrow(), Number::new(Value(1), Value(3)));
-                assert_eq!(*right.borrow(), Value(2));
+                assert_eq!(*left, Number::new(Value(1), Value(3)));
+                assert_eq!(*right, Value(2));
             }
             _ => panic!("left is not a pair"),
         }
@@ -123,8 +178,8 @@ mod test {
 
         match n {
             Pair(left, right) => {
-                assert_eq!(*left.borrow(), Value(1));
-                assert_eq!(*right.borrow(), Number::new(Value(3), Value(2)));
+                assert_eq!(*left, Value(1));
+                assert_eq!(*right, Number::new(Value(3), Value(2)));
             }
             _ => panic!("left is not a pair"),
         }
@@ -147,7 +202,7 @@ mod test {
     fn explode_deep_nested_4() {
         assert_explotion(
             "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]",
-            "[[3,[2,[8,0]]],[9,[5,[7,[3,2]]]]]",
+            "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]",
         );
     }
     #[test]
@@ -156,14 +211,6 @@ mod test {
             "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]",
             "[[3,[2,[8,0]]],[9,[5,[7,0]]]]",
         );
-    }
-
-    #[test]
-    fn leaf_iter() {
-        let n = phase_str("[1,0]");
-        let mut iter = Number::leafs_mut(Rc::new(RefCell::new(n)));
-        assert_eq!(iter.next(), Some(Rc::new(phase_str("[1,0]"))));
-        assert_eq!(iter.next(), None);
     }
 
     fn assert_explotion(n: &str, expected: &str) {
